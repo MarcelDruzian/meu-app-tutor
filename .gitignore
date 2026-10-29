@@ -1,5 +1,7 @@
 node_modules/
 .env
-data/
+/data/
 *.log
 .DS_Store
+!public/js/data/
+!public/js/data/demoData.js
