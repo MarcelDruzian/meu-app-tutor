@@ -1,0 +1,202 @@
+TUTOR IA - LEVANTAMENTO DE REQUISITOS E ESTADO ATUAL DO PROJETO
+
+1. VISÃO GERAL
+O projeto consiste em uma aplicação web para estudo personalizado, com suporte a explicação didática, geração de questionários, histórico de estudos e autenticação básica. A proposta é funcionar como um assistente educacional inteligente para estudantes, aplicável em desktop e mobile.
+
+2. OBJETIVO DO PROJETO
+Criar uma plataforma que ajude estudantes a:
+- aprender conteúdos de forma didática;
+- receber explicações em texto, áudio e vídeo;
+- testar conhecimento por meio de quizzes;
+- acompanhar progresso e histórico;
+- evoluir para autenticação real e persistência em nuvem.
+
+3. MATRIZ DE STATUS / PENDÊNCIA / PRIORIDADE
+
+3.1 Status geral do projeto
+- Status: Prototipo funcional com base estruturada para evolução
+- Situação: A aplicação já apresenta fluxo completo, autenticação local e integração com IA/ fallback.
+- Observação: A etapa atual é de validação híbrida de requisitos, persistência real e preparação para a próxima fase de produto.
+
+3.2 Itens concluídos
+
+| Item | Status | Pendência | Prioridade |
+|---|---|---|---|
+| Landing page inicial e navegação | Concluído | Revisar copy final e posicionamento estratégico | Alta |
+| Fluxo de estudo em etapas | Concluído | Validar UX final com demanda | Alta |
+| Formulário de curso, disciplina e assunto | Concluído | Confirmar campos obrigatórios com demandante | Alta |
+| Explicação didática em tela | Concluído | Ajustar textos finais e personalização | Alta |
+| Questionários / quizzes | Concluído | Validar nível de dificuldade e feedback | Alta |
+| Histórico e progresso | Concluído | Definir metrificação do usuário final | Média |
+| Autenticação local inicial | Concluído | Migrar para autenticação real e segura | Alta |
+| Persistência local em JSON/localStorage | Concluído | Trocar por banco ou serviço em nuvem | Alta |
+| Mobile-first e acessibilidade | Concluído | Validar em mais dispositivos e cenários | Alta |
+| IA integrada com fallback | Concluído | Definir provider em produção e chave real | Alta |
+| Backend em Node.js | Concluído | Ajustar regras de segurança e sessão | Alta |
+
+3.3 Pendências abertas
+
+| Área | Pendência | Status | Prioridade |
+|---|---|---|---|
+| Autenticação | Migrar do modelo local para autenticação real | Aberta | Crítica |
+| Persistência | Implementar banco de dados ou serviço cloud | Aberta | Crítica |
+| Segurança | Melhorar gestão de sessão e tokens | Aberta | Crítica |
+| IA | Definir provedor definitivo e ambiente de produção | Aberta | Alta |
+| Mobile | Validar acesso em rede local em cenário real | Aberta | Alta |
+| Documentação | Revisar README e materiais internos | Aberta | Média |
+| UX | Validar fluxo completo com demandante | Aberta | Alta |
+| Negócio | Definir público-alvo e objetivos principais | Aberta | Crítica |
+
+3.4 Prioridade de desenvolvimento
+
+Prioridade 1 - Crítica
+- autenticação real
+- persistência real
+- segurança de sessão
+- definição de público-alvo e regras de uso
+
+Prioridade 2 - Alta
+- integração de IA em produção
+- refinamento UX mobile
+- fluxo de cadastro e login
+- histórico do usuário em base real
+
+Prioridade 3 - Média
+- documentação final
+- checklist de QA
+- ajustes de copy e mídia
+- revisão de casos de uso
+
+4. ARQUITETURA IMPLEMENTADA
+4.1 Backend
+- Arquivo principal: server.js
+- Servidor HTTP em Node.js
+- Serviço estático para frontend em /public
+- Rotas de API:
+  - /api/status
+  - /api/auth/register
+  - /api/auth/login
+  - /api/auth/me
+  - /api/tutor/explain
+  - /api/tutor/quiz
+- Persistência local em arquivos JSON em /data
+  - users.json
+  - auth.json
+- Entrada de variáveis de ambiente com suporte ao arquivo .env
+
+4.2 Frontend
+- Arquivo principal: public/index.html
+- CSS modular em:
+  - public/css/style.css
+  - public/css/responsive.css
+  - public/css/variables.css
+- Scripts em:
+  - public/js/app.js
+  - public/js/services/auth.js
+  - public/js/services/storage.js
+  - public/js/services/speech.js
+  - public/js/services/tutor.js
+- Dados de demonstração em:
+  - public/js/data/demoData.js
+
+5. FUNCIONALIDADES JÁ IMPLEMENTADAS
+5.1 Fluxo de estudo
+- tela de apresentação inicial
+- escolha do formato de aprendizagem (texto, vídeo, áudio)
+- preenchimento de curso, disciplina e assunto
+- coleta de dúvida específica
+- geração de explicação didática
+
+5.2 Explicação didática
+- resposta estruturada em:
+  - conceito principal
+  - passo a passo
+  - exemplo prático
+  - resumo em 1 minuto
+  - perguntas para aprofundar
+- suporte a áudio por síntese de voz do navegador
+- recomendação de conteúdo audiovisual
+
+5.3 Quiz / fixação
+- geração de questões de múltipla escolha
+- feedback após resposta
+- progresso da resolução
+- resultado final com percentual
+- possibilidade de refazer o simulado
+
+5.4 Histórico e metas
+- armazenamento local de pesquisas e estudos
+- estatísticas simples de progresso
+- meta diária de estudo
+- visualização do histórico de pesquisas anteriores
+
+5.5 Autenticação inicial
+- registro de usuário local
+- login com email e senha
+- geração/token de sessão
+- validação do usuário autenticado na API
+- persistência de sessão em arquivo local
+
+5.6 Acessibilidade e mobile
+- viewport ajustado para mobile
+- botões com área de toque maior
+- foco visível em inputs e botões
+- layout responsivo para smartphones
+- barra de navegação inferior para mobile
+- tolerância para navegação com touch
+
+6. INTEGRATION COM INTELIGENCIA ARTIFICIAL
+A aplicação possui integração para IA com suporte a:
+- Google Gemini
+- OpenAI
+
+A lógica do backend tenta primeiro a API real e, se falhar, usa fallback pedagógico local para manter a funcionalidade.
+
+7. RESTRIÇÕES E COMPORTAMENTOS ATUAIS
+- O sistema exige autenticação para ações principais de estudo e pesquisa, conforme lógica atual da aplicação.
+- O projeto ainda usa armazenamento local em JSON e localStorage, não em banco ou serviço cloud.
+- O uso de IA real depende de variáveis de ambiente em .env.
+- Há lógica de fallback para manter o app funcionando mesmo sem chave de API.
+- O acesso em rede local para celular depende de configuração da rede e regra de firewall do Windows.
+
+8. PRINCIPAIS ARQUIVOS DO PROJETO
+- README.md
+- server.js
+- package.json
+- public/index.html
+- public/css/style.css
+- public/css/responsive.css
+- public/css/variables.css
+- public/js/app.js
+- public/js/services/auth.js
+- public/js/services/storage.js
+- public/js/services/speech.js
+- public/js/services/tutor.js
+- public/js/data/demoData.js
+- data/users.json
+- data/auth.json
+
+9. DADOS PARA LEVANTAMENTO COM O DEMANDANTE
+A seguir, os pontos que devem ser confirmados com o demandante para prosseguir:
+- Qual o público-alvo principal da aplicação? (ensino fundamental, médio, superior, concursos, profissional?)
+- O foco principal é estudo individual ou acompanhamento pedagógico institucional?
+- A autenticação deve ser opcional ou obrigatória para todas as funcionalidades?
+- O sistema deve manter histórico por usuário ou funcionar em modo visitante?
+- A aplicação deve ter integração real com IA em produção?
+- O projeto deve evoluir para armazenamento em nuvem? Qual fornecedor preferido?
+- Existe necessidade de login social (Google, Apple, Microsoft)?
+- A aplicação será usada apenas em web ou também em PWA/aplicativo mobile?
+- O conteúdo precisa ser mais genérico ou específico para uma área educacional?
+- Há expectativa de suporte ao professor, aluno ou ambos?
+- A IA deve gerar explicações, exercícios e acompanhamento de desempenho?
+
+10. RESUMO EXECUTIVO
+O projeto já está em um estágio funcional de protótipo com arquitetura de frontend + backend + autenticação local + IA integrada + histórico + mobile-first. O que falta, em termos de evolução, é consolidar a parte de persistência real, autenticação em ambiente mais robusto e planejamento de requisitos definitivos junto ao demandante para a próxima fase de desenvolvimento.
+
+11. ASSINATURA DE CONTROLE
+Projeto: Tutor IA
+Status: protótipo funcional com base estruturada para evolução
+Data do levantamento: 2026-10-25
+
+12. OBSERVAÇÃO FINAL
+Este documento serve como base para reunião de levantamento de requisitos com o demandante, permitindo validar o que já foi implementado, o que está pendente e o que deve ser priorizado na próxima etapa do desenvolvimento.

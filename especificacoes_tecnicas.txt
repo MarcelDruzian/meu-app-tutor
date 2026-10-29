@@ -1,0 +1,87 @@
+ESPECIFICACOES TECNICAS - TUTOR IA
+
+Documento baseado na implementacao atual do projeto.
+
+1. ARQUITETURA
+- Aplicacao web responsiva, com frontend servido pelo backend.
+- Backend implementado em Node.js usando o modulo nativo node:http.
+- JavaScript com modulos ES (ESM).
+- O backend utiliza fetch nativo para chamadas HTTP externas. Requer Node.js 18 ou superior.
+- O projeto nao declara dependencias externas no package.json.
+- Interface em HTML5, CSS3 e JavaScript, sem framework frontend declarado.
+- Idioma da interface: portugues do Brasil (pt-BR).
+
+2. EXECUCAO E CONFIGURACAO
+- Comando de inicializacao: npm start (executa node server.js).
+- Host padrao: 0.0.0.0.
+- Porta padrao: 3000; pode ser alterada pela variavel PORT.
+- Variavel HOST tambem pode ser configurada.
+- O backend carrega variaveis de um arquivo .env na raiz do projeto.
+- A chave de API deve ficar no backend, em .env, e nao no codigo do navegador.
+
+3. INTELIGENCIA ARTIFICIAL
+- Provedores suportados: Google Gemini e OpenAI.
+- Prioridade de selecao: Gemini quando GEMINI_API_KEY esta configurada; caso contrario,
+  OpenAI quando OPENAI_API_KEY esta configurada.
+- Google Gemini:
+  - Modelo padrao: gemini-3.8-flash, configuravel por GEMINI_MODEL (o gemini-1.5-flash foi
+    desligado pelo Google em 29/09/2025).
+  - Endpoint: https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent
+  - A chave e enviada no cabecalho x-goog-api-key (nao na URL).
+  - Formato de resposta solicitado: JSON.
+- OpenAI:
+  - Modelo padrao: gpt-4o-mini, configuravel por OPENAI_MODEL.
+  - Endpoint: https://api.openai.com/v1/chat/completions
+  - Formato de resposta solicitado: objeto JSON.
+- Temperatura 0.3 apenas na OpenAI; no Gemini 3.x o parametro esta descontinuado e nao e enviado.
+- Timeout das chamadas de IA: AI_TIMEOUT_MS (padrao 30000 ms). Falhas registram status e motivo no log.
+- Sem chave ou em caso de falha da IA, explicacoes e questionarios usam geradores locais
+  de demonstracao.
+- Configuracao de exemplo:
+  GEMINI_API_KEY=sua_chave
+  PORT=3000
+  Tambem e possivel configurar OPENAI_API_KEY em vez da chave Gemini.
+
+4. ROTAS HTTP DO BACKEND
+- GET /api/status - informa modo, provedor e disponibilidade de chave de IA.
+- POST /api/tutor/explain - solicita explicacao didatica.
+- POST /api/tutor/quiz - solicita questionario.
+- POST /api/auth/register - cria uma conta.
+- POST /api/auth/login - autentica uma conta.
+- GET /api/auth/me - retorna o usuario associado ao token Bearer.
+- A API recebe e devolve dados JSON nas rotas correspondentes.
+
+5. AUTENTICACAO E ARMAZENAMENTO
+- Usuarios e sessoes sao armazenados em arquivos JSON em DATA_DIR (padrao ./data) por uma camada
+  de storage substituivel (src/storage), com escrita atomica. O token de sessao e guardado como hash.
+- Senhas sao armazenadas com scrypt (salt individual); hashes SHA-256 antigos migram no primeiro login.
+- Tokens de sessao sao gerados com bytes aleatorios criptograficos e expiram em 7 dias.
+- O navegador guarda token, conta, historico de estudos, questionarios e metas no localStorage.
+- Historico e questionarios mantem ate 50 registros recentes por categoria.
+- Nao ha banco de dados externo configurado na implementacao atual.
+- Nota tecnica: SHA-256 simples nao e uma funcao adequada para armazenamento de senhas
+  (nota historica, ja resolvida com scrypt). Para varias instancias, migrar para banco de dados.
+
+6. VOZ E AUDIO
+- Leitura em voz alta: Web Speech API (SpeechSynthesis), quando suportada pelo navegador.
+- Reconhecimento de voz: SpeechRecognition/webkitSpeechRecognition, quando suportado.
+- Idioma configurado para reconhecimento e leitura: pt-BR.
+- Essas funcoes sao APIs nativas do navegador, independentes das APIs de IA.
+
+7. PWA E MODO OFFLINE
+- A aplicacao possui Web App Manifest e Service Worker.
+- O Service Worker armazena em cache arquivos estaticos da interface e oferece fallback
+  para a pagina inicial em navegacao offline.
+- Chamadas para caminhos /api/ nao sao interceptadas nem armazenadas em cache.
+- A geracao local de demonstracao permite exibir explicacoes e questionarios sem a IA online.
+
+8. LIMITACOES DO ESCOPO ATUAL
+- Usuarios e sessoes ficam em arquivos JSON locais, sem banco de dados ou sincronizacao
+  entre servidores/dispositivos.
+- A disponibilidade da voz depende do suporte do navegador e do sistema operacional.
+- O funcionamento de IA em tempo real depende de chave valida e acesso a internet.
+
+9. NUVEM
+- Rate limiting em memoria (auth por IP; tutor por usuario), corpo JSON limitado a 100 KB.
+- Encerramento gracioso em SIGTERM/SIGINT (ate 10 s). TRUST_PROXY automatico em nuvem.
+- Em nuvem, apontar DATA_DIR para volume persistente. Detalhes no README (secao Deploy).

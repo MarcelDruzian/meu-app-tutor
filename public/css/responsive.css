@@ -1,0 +1,207 @@
+/* ==========================================================
+   TUTOR IA - RESPONSIVIDADE E ADAPTAÇÃO MULTITELA
+   ========================================================== */
+
+/* Telas muito pequenas (até 380px) */
+@media (max-width: 380px) {
+  :root {
+    --font-size-base: 0.9375rem; /* 15px */
+    --font-size-2xl: 1.35rem;
+  }
+
+  .header-container {
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+  }
+
+  .brand-info {
+    min-width: 0;
+  }
+
+  .brand-info h1 {
+    font-size: 1rem;
+  }
+
+  .brand-info span {
+    display: block;
+    font-size: 0.66rem;
+  }
+
+  .demo-pill {
+    padding: 5px 9px;
+    font-size: 0.62rem;
+  }
+
+  .main-wrapper {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  .stats-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome-mascot-card {
+    width: 100px;
+    height: 100px;
+  }
+
+  .mic-control-bar,
+  .audio-player-header,
+  .account-status-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .quick-pill {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Ajustes extra para smartphones pequenas */
+@media (max-width: 480px) {
+  .welcome-hero {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .feature-card {
+    padding: var(--space-3);
+  }
+
+  .form-card,
+  .content-section-card,
+  .question-card,
+  .quiz-header-card,
+  .auth-form-container,
+  .study-goal-card {
+    padding: var(--space-4);
+  }
+
+  .tutor-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .result-header-card {
+    padding: var(--space-4);
+  }
+
+  .meta-tags-row {
+    gap: 6px;
+  }
+
+  .meta-badge {
+    font-size: 0.66rem;
+    padding: 5px 8px;
+  }
+}
+
+/* Telas Médias e Tablets (a partir de 640px) */
+@media (min-width: 640px) {
+  .feature-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .format-selection-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .tutor-action-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats-summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Telas Grandes e Desktops (a partir de 768px) */
+@media (min-width: 768px) {
+  :root {
+    --header-height: 72px;
+  }
+
+  .main-wrapper {
+    padding-top: var(--space-6);
+  }
+
+  .welcome-title {
+    font-size: 2.25rem;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+  }
+
+  .welcome-actions {
+    flex-direction: row;
+    max-width: 480px;
+  }
+
+  .welcome-actions .btn {
+    flex: 1;
+  }
+}
+
+/* Suporte para modo escuro preferencial (Dark Mode) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-page: #0f172a;
+    --bg-card: #1e293b;
+    --bg-card-subtle: #334155;
+    --bg-input: #1e293b;
+    --border-color: #334155;
+
+    --text-main: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+
+    --color-primary-light: rgba(79, 70, 229, 0.2);
+    --color-accent-light: rgba(6, 182, 212, 0.15);
+    --color-success-light: rgba(16, 185, 129, 0.15);
+    --color-warning-light: rgba(245, 158, 11, 0.15);
+    --color-danger-light: rgba(239, 68, 68, 0.15);
+  }
+
+  .app-header,
+  .bottom-nav {
+    background-color: #1e293b;
+  }
+
+  .toast {
+    background-color: #1e293b;
+    color: #f8fafc;
+  }
+
+  .demo-pill {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fde68a;
+    border-color: #92400e;
+  }
+
+  .demo-alert-banner {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fef3c7;
+    border-color: #b45309;
+  }
+
+  .summary-box {
+    background-color: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+    border-left: 5px solid #34d399;
+    color: #f8fafc;
+  }
+
+  .example-box {
+    background-color: rgba(6, 182, 212, 0.15);
+    border-color: rgba(6, 182, 212, 0.4);
+    border-left: 5px solid #22d3ee;
+    color: #f8fafc;
+  }
+
+  .reading-text-block,
+  .didactic-steps-list li {
+    color: #f8fafc;
+  }
+}

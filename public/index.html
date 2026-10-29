@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#4F46E5">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Tutor IA - Assistente educacional inteligente para estudantes aprenderem no seu próprio ritmo com texto, vídeo e áudio.">
+  <title>Tutor IA — Assistente Inteligente de Estudos</title>
+
+  <!-- PWA Manifest & Favicon -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <!-- Estilos CSS Modulares -->
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+
+  <!-- ========================================================
+       CABEÇALHO FIXO
+       ======================================================== -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-link" id="btnLogoHome" role="button" tabindex="0" title="Ir para o início">
+        <div class="mascot-avatar">
+          <!-- Ícone do Mascote Tutor IA (Corujinha/Robô didático) -->
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2a9 9 0 0 0-9 9c0 4.1 2.8 7.6 6.7 8.7L9 22h6l-.7-2.3C18.2 18.6 21 15.1 21 11a9 9 0 0 0-9-9zm-3.5 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm7 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1>Tutor IA</h1>
+          <span>Apoio aos Estudos</span>
+        </div>
+      </div>
+
+      <div class="header-status">
+        <div class="demo-pill" id="headerStatusPill" title="Status da IA">
+          <span class="pulse-dot" id="headerPulseDot"></span>
+          <span id="headerStatusText">Etapa 2 · Demo</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================
+       CONTAINER DE NOTIFICAÇÕES (TOASTS)
+       ======================================================== -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- ========================================================
+       CORPO PRINCIPAL (TELAS DO APLICATIVO)
+       ======================================================== -->
+  <main class="main-wrapper">
+
+    <!-- ======================================================
+         TELA 1: BOAS-VINDAS
+         ====================================================== -->
+    <section class="screen active" id="screenWelcome" aria-labelledby="welcomeTitle">
+      <div class="welcome-hero">
+        <div class="welcome-mascot-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M9 10h.01M15 10h.01"/>
+            <path d="M8 15c1.5 1.5 6.5 1.5 8 0"/>
+            <path d="M12 3v2"/>
+            <circle cx="12" cy="3" r="1" fill="#4F46E5"/>
+          </svg>
+        </div>
+
+        <h2 class="welcome-title" id="welcomeTitle">
+          Aprenda qualquer matéria com o <span class="highlight">Tutor IA</span>
+        </h2>
+        <p class="welcome-subtitle">
+          Seu assistente educacional inteligente para tirar dúvidas, resumir matérias, ouvir explicações e testar seus conhecimentos no celular ou computador.
+        </p>
+
+        <!-- Destaques Didáticos -->
+        <div class="feature-cards-grid">
+          <div class="feature-card">
+            <div class="feature-icon-badge">💡</div>
+            <div class="feature-info">
+              <h4>Explicações Passo a Passo</h4>
+              <p>Linguagem descomplicada com conceitos centrais e analogias do cotidiano.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-badge">🎯</div>
+            <div class="feature-info">
+              <h4>Texto, Vídeo ou Áudio</h4>
+              <p>Escolha como prefere aprender: lendo, ouvindo em voz alta ou assistindo.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-badge">📝</div>
+            <div class="feature-info">
+              <h4>Questionários Interativos</h4>
+              <p>Simulados com correção na hora e justificativa para cada alternativa.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-badge">📊</div>
+            <div class="feature-info">
+              <h4>Histórico & Metas</h4>
+              <p>Acompanhe sua pontuação e revise pesquisas anteriores mesmo sem cadastro.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ação Principal -->
+        <div class="welcome-actions">
+          <button class="btn btn-primary" id="btnStartResearch">
+            🚀 Começar pesquisa
+          </button>
+        </div>
+
+        <div class="guest-notice" style="margin-top: 16px;">
+          <span>🔓</span> Modo de teste gratuito — Nenhuma conta obrigatória para começar.
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         TELA 2: ESCOLHA DO FORMATO DE APRENDIZAGEM
+         ====================================================== -->
+    <section class="screen" id="screenFormat" aria-labelledby="formatTitle">
+      <div class="section-heading">
+        <span class="step-indicator">Passo 1 de 2</span>
+        <h2 class="page-title" id="formatTitle">Como você prefere aprender?</h2>
+        <p class="page-description">
+          Selecione o formato ideal para o seu momento de estudo. O Tutor IA adaptará o conteúdo para você.
+        </p>
+      </div>
+
+      <!-- Grid de Formatos Selecionáveis -->
+      <div class="format-selection-grid" role="radiogroup" aria-label="Formatos de aprendizagem">
+        
+        <!-- Opção 1: Texto -->
+        <label class="format-card selected" id="cardFormatText">
+          <input type="radio" name="studyFormat" value="text" checked>
+          <div class="format-icon-box">📝</div>
+          <div class="format-details">
+            <h3>Texto</h3>
+            <p>Leitura guiada, tópicos estruturados, resumos e exemplos claros.</p>
+          </div>
+          <div class="format-check-badge">✓</div>
+        </label>
+
+        <!-- Opção 2: Vídeo -->
+        <label class="format-card" id="cardFormatVideo">
+          <input type="radio" name="studyFormat" value="video">
+          <div class="format-icon-box">🎬</div>
+          <div class="format-details">
+            <h3>Vídeo</h3>
+            <p>Recomendações audiovisuais curadas para fixar o assunto visualmente.</p>
+          </div>
+          <div class="format-check-badge">✓</div>
+        </label>
+
+        <!-- Opção 3: Áudio -->
+        <label class="format-card" id="cardFormatAudio">
+          <input type="radio" name="studyFormat" value="audio">
+          <div class="format-icon-box">🎧</div>
+          <div class="format-details">
+            <h3>Áudio</h3>
+            <p>Explicações narradas em voz alta pelo navegador para ouvir onde estiver.</p>
+          </div>
+          <div class="format-check-badge">✓</div>
+        </label>
+
+      </div>
+
+      <!-- Dúvida Inicial / O que deseja aprender -->
+      <div class="quick-question-card">
+        <label class="form-label" for="inputQuickQuestion">
+          O que você deseja aprender ou esclarecer hoje? <span style="font-weight: normal; color: var(--text-muted);">(Opcional)</span>
+        </label>
+        <div class="input-container">
+          <input 
+            type="text" 
+            id="inputQuickQuestion" 
+            class="input-field" 
+            placeholder="Ex: Não entendi as Leis de Newton, me ajude a memorizar..."
+            autocomplete="off"
+          >
+        </div>
+      </div>
+
+      <!-- Ações de Navegação -->
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary" id="btnBackToWelcome" style="flex: 1;">
+          ← Voltar
+        </button>
+        <button class="btn btn-primary" id="btnContinueToDetails" style="flex: 2;">
+          Continuar →
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         TELA 3: INFORMAÇÕES DO ESTUDO
+         ====================================================== -->
+    <section class="screen" id="screenStudyInfo" aria-labelledby="studyInfoTitle">
+      <div class="section-heading">
+        <span class="step-indicator">Passo 2 de 2</span>
+        <h2 class="page-title" id="studyInfoTitle">Informações do seu estudo</h2>
+        <p class="page-description">
+          Diga ao Tutor IA o que você está cursando para personalizar o nível da resposta.
+        </p>
+      </div>
+
+      <div class="form-card">
+        <!-- Campo: Curso -->
+        <div class="form-group">
+          <label class="form-label" for="inputCourse">
+            Curso ou Nível de Ensino <span class="required-badge">*</span>
+          </label>
+          <div class="input-container">
+            <input 
+              type="text" 
+              id="inputCourse" 
+              class="input-field" 
+              placeholder="Digite livremente (ex: Ensino Superior, Engenharia, Concurso...) ou escolha abaixo" 
+              required
+            >
+          </div>
+          <div class="field-error-msg" id="errCourse">Por favor, digite seu curso ou selecione uma opção.</div>
+          
+          <p class="field-hint">💡 Digite o que quiser ou escolha uma sugestão:</p>
+          <div class="suggestions-pills">
+            <span class="quick-pill" data-target="inputCourse" data-val="Ensino Superior / Graduação">🎓 Ensino Superior</span>
+            <span class="quick-pill" data-target="inputCourse" data-val="Ensino Médio / ENEM">🏫 Ensino Médio</span>
+            <span class="quick-pill" data-target="inputCourse" data-val="Ensino Fundamental">📚 Ensino Fundamental</span>
+            <span class="quick-pill" data-target="inputCourse" data-val="Concurso Público">🏛️ Concurso Público</span>
+            <span class="quick-pill" data-target="inputCourse" data-val="Pós-graduação">📖 Pós-graduação</span>
+            <span class="quick-pill" data-target="inputCourse" data-val="Direito">Direito</span>
+            <span class="quick-pill" data-target="inputCourse" data-val="Ciência da Computação">Computação</span>
+            <span class="quick-pill" data-target="inputCourse" data-val="Engenharia">Engenharia</span>
+            <span class="quick-pill" data-target="inputCourse" data-val="Administração">Administração</span>
+            <span class="quick-pill pill-custom" data-target="inputCourse" data-val="">✏️ Outro (digitar)...</span>
+          </div>
+        </div>
+
+        <!-- Campo: Disciplina -->
+        <div class="form-group">
+          <label class="form-label" for="inputSubject">
+            Disciplina ou Matéria <span class="required-badge">*</span>
+          </label>
+          <div class="input-container">
+            <input 
+              type="text" 
+              id="inputSubject" 
+              class="input-field" 
+              placeholder="Digite qualquer matéria (ex: História, Física, Direito...) ou escolha abaixo" 
+              required
+            >
+          </div>
+          <div class="field-error-msg" id="errSubject">Por favor, digite a matéria ou selecione uma opção.</div>
+
+          <p class="field-hint">💡 Digite sua matéria ou selecione uma sugestão:</p>
+          <div class="suggestions-pills">
+            <span class="quick-pill" data-target="inputSubject" data-val="História">História</span>
+            <span class="quick-pill" data-target="inputSubject" data-val="Física">Física</span>
+            <span class="quick-pill" data-target="inputSubject" data-val="Matemática">Matemática</span>
+            <span class="quick-pill" data-target="inputSubject" data-val="Português / Redação">Português</span>
+            <span class="quick-pill" data-target="inputSubject" data-val="Biologia">Biologia</span>
+            <span class="quick-pill" data-target="inputSubject" data-val="Química">Química</span>
+            <span class="quick-pill" data-target="inputSubject" data-val="Programação e T.I.">Programação</span>
+            <span class="quick-pill" data-target="inputSubject" data-val="Direito Constitucional">Direito</span>
+            <span class="quick-pill" data-target="inputSubject" data-val="Geografia">Geografia</span>
+            <span class="quick-pill pill-custom" data-target="inputSubject" data-val="">✏️ Outra (digitar)...</span>
+          </div>
+        </div>
+
+        <!-- Campo: Assunto ou Tópico -->
+        <div class="form-group">
+          <label class="form-label" for="inputTopic">
+            Assunto ou Tópico <span class="required-badge">*</span>
+          </label>
+          <div class="input-container">
+            <input 
+              type="text" 
+              id="inputTopic" 
+              class="input-field" 
+              placeholder="Digite o tema exato que quer aprender (ex: Descoberta do Brasil...)" 
+              required
+            >
+          </div>
+          <div class="field-error-msg" id="errTopic">Por favor, digite o assunto que deseja estudar.</div>
+
+          <p class="field-hint">💡 Exemplos de temas populares (ou digite livremente o seu):</p>
+          <div class="suggestions-pills">
+            <span class="quick-pill" data-target="inputTopic" data-val="Descoberta do Brasil">🇧🇷 Descoberta do Brasil</span>
+            <span class="quick-pill" data-target="inputTopic" data-val="Leis de Newton">Leis de Newton</span>
+            <span class="quick-pill" data-target="inputTopic" data-val="Estruturas de Repetição (Loops)">Loops (For/While)</span>
+            <span class="quick-pill" data-target="inputTopic" data-val="Funções de 2º Grau">Função 2º Grau</span>
+            <span class="quick-pill" data-target="inputTopic" data-val="Fotossíntese e Células">Fotossíntese</span>
+            <span class="quick-pill" data-target="inputTopic" data-val="Direitos Fundamentais">Direitos Fundamentais</span>
+            <span class="quick-pill pill-custom" data-target="inputTopic" data-val="">✏️ Outro (digitar)...</span>
+          </div>
+        </div>
+
+        <!-- Campo: Dúvida Específica com Microfone -->
+        <div class="form-group">
+          <label class="form-label" for="inputSpecificQuestion">
+            Dúvida específica ou pergunta <span style="font-weight: normal; color: var(--text-muted);">(Opcional)</span>
+          </label>
+          <div class="input-container">
+            <textarea 
+              id="inputSpecificQuestion" 
+              class="textarea-field" 
+              rows="3" 
+              placeholder="Digite aqui sua pergunta ou utilize o botão do microfone abaixo para ditar..."
+            ></textarea>
+          </div>
+
+          <!-- Controle de Microfone / Gravação -->
+          <div class="mic-control-bar">
+            <button type="button" class="mic-btn" id="btnMicRecord" title="Ditar dúvida por voz">
+              <span id="micIcon">🎙️</span>
+              <span id="micBtnText">Falar por voz</span>
+            </button>
+            <span class="mic-status-text" id="micStatusText">Clique no microfone para ditar</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary" id="btnBackToFormat" style="flex: 1;">
+          ← Voltar
+        </button>
+        <button class="btn btn-primary" id="btnSubmitSearch" style="flex: 2;">
+          <span id="searchSpinner" style="display: none;">⏳ </span>
+          <span>🔍 Pesquisar conteúdo</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         TELA 4: RESULTADO DO TUTOR
+         ====================================================== -->
+    <section class="screen" id="screenResult" aria-labelledby="resultTitle">
+      
+      <!-- Cabeçalho do Resultado -->
+      <div class="result-header-card">
+        <div class="meta-tags-row">
+          <span class="meta-badge" id="badgeCourse">Curso</span>
+          <span class="meta-badge" id="badgeSubject">Disciplina</span>
+          <span class="meta-badge" id="badgeFormat">Formato: Texto</span>
+        </div>
+        <h2 class="result-main-title" id="resultTitle">Título do Conteúdo</h2>
+        <p class="result-main-subtitle" id="resultSubtitle">Subtítulo explicativo</p>
+      </div>
+
+      <!-- Banner Dinâmico: IA Real em Tempo Real ou Demonstração -->
+      <div class="demo-alert-banner" id="resultStatusBanner">
+        <span id="resultStatusIcon" style="font-size: 1.3rem;">ℹ️</span>
+        <div>
+          <strong id="resultStatusTitle">Modo de Demonstração (Etapa 2)</strong>
+          <span id="resultStatusNotice">Esta explicação foi gerada com conteúdo didático estruturado.</span>
+        </div>
+      </div>
+
+      <!-- Player de Áudio (Exibido sempre, com destaque caso formato seja Áudio) -->
+      <div class="audio-player-card" id="audioPlayerCard">
+        <div class="audio-player-header">
+          <div class="audio-title-box">
+            <span>🎧</span>
+            <span>Ouvir explicação do Tutor IA</span>
+          </div>
+          <div class="audio-controls">
+            <button class="audio-btn" id="btnPlaySpeech" title="Reproduzir áudio" aria-label="Reproduzir áudio">
+              ▶
+            </button>
+            <button class="audio-btn audio-btn-secondary" id="btnPauseSpeech" title="Pausar áudio" aria-label="Pausar áudio" style="display: none;">
+              ⏸
+            </button>
+            <button class="audio-btn audio-btn-secondary" id="btnStopSpeech" title="Parar áudio" aria-label="Parar áudio">
+              ⏹
+            </button>
+          </div>
+        </div>
+        <div class="audio-status-label" id="audioStatusLabel">
+          Toque no botão Play para ouvir a explicação com síntese de voz do navegador.
+        </div>
+      </div>
+
+      <!-- Seção Audiovisual (Quando formato for Vídeo) -->
+      <div class="content-section-card" id="videoSectionCard" style="display: none;">
+        <h3 class="section-card-title">🎬 Conteúdo Audiovisual Recomendado</h3>
+        <p style="font-size: var(--font-size-xs); color: var(--text-secondary); margin-bottom: 12px;">
+          Curadoria de vídeos educativos sobre este tema para reforçar o aprendizado visual:
+        </p>
+        <div class="video-preview-card">
+          <div class="video-thumb-placeholder">
+            <div class="video-play-icon">▶</div>
+            <span style="font-size: 12px; margin-top: 8px; opacity: 0.85;">Vídeo Educativo Recomendado</span>
+          </div>
+          <div class="video-info-box">
+            <h4 id="videoTitle">Título do Vídeo Educativo</h4>
+            <p id="videoDesc">Descrição sobre a aula recomendada.</p>
+            <div style="margin-top: 10px;">
+              <a href="#" id="linkSearchVideo" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 8px 14px; font-size: 12px; width: auto; display: inline-flex;">
+                🔗 Pesquisar aulas no YouTube
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 1: Conceito Principal -->
+      <div class="content-section-card highlight-card">
+        <h3 class="section-card-title">💡 Conceito Principal</h3>
+        <div id="contentConcept" style="font-size: var(--font-size-sm); color: var(--text-secondary); line-height: 1.6;">
+          Carregando explicação...
+        </div>
+      </div>
+
+      <!-- Card 2: Passo a Passo do Aprendizado -->
+      <div class="content-section-card">
+        <h3 class="section-card-title">📋 Passo a Passo para Compreender</h3>
+        <ol class="didactic-steps-list" id="contentStepsList">
+          <!-- Itens preenchidos via JS -->
+        </ol>
+      </div>
+
+      <!-- Card 3: Exemplos Práticos do Cotidiano -->
+      <div class="content-section-card">
+        <h3 class="section-card-title">🌟 Exemplo Prático do Cotidiano</h3>
+        <div class="example-box" id="contentExample">
+          Exemplo prático contextualizado.
+        </div>
+      </div>
+
+      <!-- Card 4: Resumo em 1 Minuto -->
+      <div class="content-section-card">
+        <h3 class="section-card-title">⏱️ Resumo em 1 Minuto</h3>
+        <div class="summary-box" id="contentSummary">
+          Síntese rápida para memorização.
+        </div>
+      </div>
+
+      <!-- Seção Expansível "Ver Mais" -->
+      <div class="content-section-card" id="extraDetailsCard" style="display: none;">
+        <h3 class="section-card-title">📖 Dicas Avançadas do Tutor</h3>
+        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); line-height: 1.5;">
+          <p style="margin-bottom: 8px;">
+            <strong>Como fixar este conteúdo:</strong> Utilize a repetição espaçada. Revise este resumo após 24 horas e tente refazer o questionário sem consultar as notas.
+          </p>
+          <p>
+            <strong>Armadilha comum:</strong> Muitos estudantes confundem a teoria básica ao tentar resolver problemas sem ler com atenção os dados fornecidos pelo enunciado.
+          </p>
+        </div>
+      </div>
+
+      <!-- Sugestões de Perguntas para Aprofundar -->
+      <div class="content-section-card">
+        <h3 class="section-card-title">🚀 Perguntas para Aprofundar</h3>
+        <p style="font-size: var(--font-size-xs); color: var(--text-secondary);">
+          Toque em qualquer pergunta para pesquisar e expandir seu entendimento:
+        </p>
+        <div class="deepen-questions-grid" id="deepenQuestionsList">
+          <!-- Inseridas dinamicamente via JS -->
+        </div>
+      </div>
+
+      <!-- Painel de Ações do Resultado -->
+      <div class="tutor-action-grid">
+        <button class="btn btn-secondary" id="btnToggleSeeMore">
+          📖 Ver mais detalhes
+        </button>
+        <button class="btn btn-primary" id="btnGoToQuiz">
+          📝 Gerar questionário / Exercícios
+        </button>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <button class="btn btn-text" id="btnNewSearch">
+          ← Fazer outra pergunta / Nova pesquisa
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         TELA 5: EXERCÍCIOS E QUESTIONÁRIOS
+         ====================================================== -->
+    <section class="screen" id="screenQuiz" aria-labelledby="quizMainTitle">
+      <div class="section-heading">
+        <span class="step-indicator">Simulado de Fixação</span>
+        <h2 class="page-title" id="quizMainTitle">Exercícios Práticos</h2>
+        <p class="page-description" id="quizSubtitle">
+          Teste seus conhecimentos com questões comentadas pelo Tutor IA.
+        </p>
+      </div>
+
+      <!-- Progresso do Quiz -->
+      <div class="quiz-header-card" id="quizProgressCard">
+        <div style="display: flex; justify-content: space-between; font-size: var(--font-size-xs); font-weight: bold;">
+          <span id="quizCurrentStepText">Questão 1 de 3</span>
+          <span id="quizScorePreviewText">Acertos: 0</span>
+        </div>
+        <div class="quiz-progress-bar-bg">
+          <div class="quiz-progress-bar-fill" id="quizProgressBarFill"></div>
+        </div>
+      </div>
+
+      <!-- Card da Questão Ativa -->
+      <div class="question-card" id="activeQuestionCard">
+        <span class="question-number-pill" id="questionPill">Questão 1</span>
+        <p class="question-statement" id="questionStatementText">
+          Enunciado da questão será carregado aqui...
+        </p>
+
+        <!-- Alternativas -->
+        <div class="quiz-options-list" id="quizOptionsContainer">
+          <!-- Inseridas dinamicamente via JS -->
+        </div>
+
+        <!-- Feedback Explicativo (Por que está certo/errado) -->
+        <div class="question-feedback-box" id="questionFeedbackBox">
+          <strong id="feedbackTitle">Explicação Didática:</strong>
+          <p id="feedbackText" style="margin-top: 4px;"></p>
+        </div>
+
+        <!-- Botão Próxima Questão -->
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary" id="btnNextQuestion" style="display: none;">
+            Próxima questão →
+          </button>
+        </div>
+      </div>
+
+      <!-- Resultado Final do Quiz (Exibido ao concluir todas) -->
+      <div class="quiz-score-card" id="quizResultSummaryCard" style="display: none;">
+        <div class="score-circle">
+          <span class="score-number" id="finalScoreNumber">100%</span>
+          <span class="score-label" id="finalScoreFraction">3 de 3 acertos</span>
+        </div>
+
+        <h3 style="font-size: var(--font-size-xl); margin-bottom: 8px;" id="finalScoreHeadline">
+          Parabéns pelo seu estudo!
+        </h3>
+        <p class="score-motivational-text" id="finalScoreMessage">
+          Você demonstrou ótimo domínio dos conceitos fundamentais deste assunto.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; max-width: 380px; margin: 0 auto;">
+          <button class="btn btn-primary" id="btnRetryQuiz">
+            🔄 Refazer questionário
+          </button>
+          <button class="btn btn-secondary" id="btnBackToResultFromQuiz">
+            ← Voltar ao conteúdo do estudo
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         TELA 6: HISTÓRICO E PROGRESSO
+         ====================================================== -->
+    <section class="screen" id="screenHistory" aria-labelledby="historyTitle">
+      <div class="section-heading">
+        <h2 class="page-title" id="historyTitle">Histórico e Progresso</h2>
+        <p class="page-description">
+          Acompanhe seus estudos realizados, metas diárias e simulados praticados.
+        </p>
+      </div>
+
+      <!-- Painel de Estatísticas -->
+      <div class="stats-summary-grid">
+        <div class="stat-box">
+          <div class="stat-box-value" id="statTotalStudies">0</div>
+          <div class="stat-box-label">Estudos Realizados</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-value" id="statQuizzesDone">0</div>
+          <div class="stat-box-label">Simulados Feitos</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-value" id="statStreakDays">1🔥</div>
+          <div class="stat-box-label">Dias Consecutivos</div>
+        </div>
+      </div>
+
+      <!-- Cartão de Metas Diárias -->
+      <div class="study-goal-card">
+        <div class="goal-header">
+          <span class="goal-title">🎯 Meta Diária de Estudos</span>
+          <span class="goal-badge" id="goalProgressLabel">1 de 3 concluídos</span>
+        </div>
+        <div class="quiz-progress-bar-bg">
+          <div class="quiz-progress-bar-fill" id="goalProgressBarFill" style="width: 33%;"></div>
+        </div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+          Cada pesquisa ou questionário realizado soma pontos na sua meta diária!
+        </p>
+      </div>
+
+      <!-- Lista de Estudos Recentes -->
+      <h3 style="font-size: var(--font-size-base); margin: 20px 0 10px;">Pesquisas e Resumos Recentes</h3>
+      <div class="history-list" id="historyListContainer">
+        <!-- Itens inseridos dinamicamente via JS -->
+      </div>
+
+      <!-- Aviso Explicativo de Armazenamento Local -->
+      <div class="local-storage-notice">
+        <strong>💾 Armazenamento Local neste Navegador:</strong><br>
+        Seus dados de estudo estão salvos com privacidade na memória deste dispositivo. Se você limpar os cookies ou o histórico do navegador, esses dados locais serão apagados. Na Etapa 3, implementaremos sincronização na nuvem com login opcional.
+        <div style="margin-top: 10px;">
+          <button class="btn btn-secondary" id="btnClearHistory" style="padding: 6px 12px; font-size: 11px; width: auto;">
+            🗑️ Limpar histórico deste navegador
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================
+         TELA 7: CONTA DO ESTUDANTE
+         ====================================================== -->
+    <section class="screen" id="screenAccount" aria-labelledby="accountTitle">
+      <div class="section-heading">
+        <h2 class="page-title" id="accountTitle">Conta do Estudante</h2>
+        <p class="page-description">
+          Acesse suas preferências ou continue estudando no modo teste sem burocracia.
+        </p>
+      </div>
+
+      <!-- Cartão de Status do Usuário -->
+      <div class="account-status-card">
+        <div class="account-avatar" id="userAvatarIcon">🎓</div>
+        <div class="account-status-info">
+          <h3 id="userDisplayName">Estudante Visitante</h3>
+          <p id="userModeNotice">Modo de Teste Gratuito (Sem cadastro)</p>
+        </div>
+      </div>
+
+      <!-- Abas Entrar / Criar Conta -->
+      <div class="account-tabs" role="tablist">
+        <button class="account-tab-btn active" id="tabBtnLogin" role="tab" aria-selected="true">
+          Entrar
+        </button>
+        <button class="account-tab-btn" id="tabBtnRegister" role="tab" aria-selected="false">
+          Criar Conta
+        </button>
+      </div>
+
+      <!-- Formulário de Autenticação Opcional -->
+      <div class="auth-form-container">
+        <form id="authForm" onsubmit="event.preventDefault();">
+          <div class="form-group" id="groupNameRegister" style="display: none;">
+            <label class="form-label" for="inputAuthName">Seu Nome</label>
+            <input type="text" id="inputAuthName" class="input-field" placeholder="Como quer ser chamado?">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inputAuthEmail">E-mail</label>
+            <input type="email" id="inputAuthEmail" class="input-field" placeholder="estudante@exemplo.com" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inputAuthPassword">Senha</label>
+            <input type="password" id="inputAuthPassword" class="input-field" placeholder="Sua senha secreta" required>
+          </div>
+
+          <div style="margin-bottom: 16px; text-align: right;" id="boxForgotPassword">
+            <button type="button" class="btn-text" id="btnForgotPassword" style="padding: 0; font-size: 12px;">
+              Esqueci minha senha
+            </button>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btnSubmitAuth">
+            Entrar na minha conta
+          </button>
+        </form>
+
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-color); text-align: center;">
+          <p style="font-size: var(--font-size-xs); color: var(--text-secondary); margin-bottom: 10px;">
+            Prefere não criar conta agora?
+          </p>
+          <button class="btn btn-secondary" id="btnContinueAsGuest">
+            Continuar em Modo Visitante
+          </button>
+        </div>
+      </div>
+
+      <!-- Informação Didática sobre a Etapa 3 -->
+      <div class="local-storage-notice" style="margin-top: 20px;">
+        <strong>☁️ Sincronização em Nuvem (Etapa 3):</strong><br>
+        O acesso básico continuará 100% gratuito e livre de cadastro. Na Etapa 3, adicionaremos a sincronização com Supabase para que usuários cadastrados acessem o mesmo histórico no celular e computador.
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================
+       BARRA DE NAVEGAÇÃO INFERIOR (BOTTOM NAV)
+       Mobile-first: sempre acessível no polegar do usuário
+       ======================================================== -->
+  <nav class="bottom-nav" aria-label="Navegação Principal">
+    <button class="nav-tab-btn active" data-screen="screenWelcome" id="navHome">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <span>Início</span>
+    </button>
+
+    <button class="nav-tab-btn" data-screen="screenFormat" id="navStudy">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <span>Estudar</span>
+    </button>
+
+    <button class="nav-tab-btn" data-screen="screenQuiz" id="navQuiz">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="9" y1="15" x2="15" y2="15"/>
+      </svg>
+      <span>Exercícios</span>
+    </button>
+
+    <button class="nav-tab-btn" data-screen="screenHistory" id="navHistory">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+      <span>Progresso</span>
+    </button>
+
+    <button class="nav-tab-btn" data-screen="screenAccount" id="navAccount">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span>Conta</span>
+    </button>
+  </nav>
+
+  <!-- Script Principal da Aplicação -->
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "tutor-ia",
+  "version": "1.0.0",
+  "description": "Tutor IA - Assistente Educacional Inteligente de Estudos",
+  "main": "server.js",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "tutor",
+    "ia",
+    "educacao",
+    "estudos",
+    "pwa"
+  ],
+  "author": "Equipe Tutor IA",
+  "license": "MIT"
+}
