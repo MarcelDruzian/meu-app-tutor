@@ -487,6 +487,34 @@ describe('integração com IA (Gemini simulado)', () => {
     assert.match(s.logs(), /tempo limite/);
   });
 
+  test('retry do provedor faz uma segunda tentativa antes do fallback', async () => {
+    const mock = await startMockGemini();
+    let requestCount = 0;
+    const originalReply = mock.state;
+    const server = http.createServer((req, res) => {
+      requestCount += 1;
+      if (requestCount === 1) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: { code: 503, message: 'temporarily unavailable' } }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({
+        title: 'Ok', subtitle: 's', levelTag: 'Iniciante', summary: 'x',
+        sections: [{ type: 'concept', title: '1', content: 'conteúdo simulado' }],
+        followUpQuestions: [], audioScript: 'a', videoRecommendations: []
+      }) }] } }] }));
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    cleanups.push(async () => { server.closeAllConnections?.(); server.close(); });
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const s = await startServer({ env: { GEMINI_API_KEY: 'k', GEMINI_API_BASE: base, AI_RETRY_ATTEMPTS: '1' } });
+    const explain = await s.json('POST', '/api/tutor/explain', explainBody);
+    assert.equal(requestCount, 2, 'deve tentar novamente em falha transitória');
+    assert.equal(explain.data.meta.isDemo, false);
+    assert.equal(explain.data.tutorExplanation.title, 'Ok');
+  });
+
   test('provedor indisponível (conexão recusada) cai no fallback sem derrubar o servidor', async () => {
     const s = await startServer({ env: { GEMINI_API_KEY: 'k', GEMINI_API_BASE: 'http://127.0.0.1:1' } });
     const explain = await s.json('POST', '/api/tutor/explain', explainBody);

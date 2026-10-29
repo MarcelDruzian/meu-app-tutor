@@ -173,7 +173,7 @@ O app é um único processo Node sem dependências: em Render, Railway, Fly.io e
 | Node | 18 ou superior |
 | Health check | `GET /api/status` |
 
-**Variáveis de ambiente** (veja `.env.example`): `GEMINI_API_KEY` (ou `OPENAI_API_KEY`), `DATA_DIR`, e opcionalmente `GEMINI_MODEL`, `AI_TIMEOUT_MS`, `TRUST_PROXY_HOPS`. `PORT` a plataforma define sozinha; `TRUST_PROXY` liga sozinho em nuvem.
+**Variáveis de ambiente** (veja `.env.example`): `GEMINI_API_KEY` (ou `OPENAI_API_KEY`), `DATA_DIR`, e opcionalmente `GEMINI_MODEL`, `AI_TIMEOUT_MS`, `AI_RETRY_ATTEMPTS`, `TRUST_PROXY_HOPS`. `PORT` a plataforma define sozinha; `TRUST_PROXY` liga sozinho em nuvem.
 
 > ⚠️ **Persistência:** usuários e sessões ficam em arquivos JSON dentro de `DATA_DIR`. Em disco efêmero (padrão da maioria dos planos), esses arquivos são **apagados a cada deploy/reinício**. Anexe um volume persistente à plataforma, aponte `DATA_DIR` para o ponto de montagem (ex.: `/var/data`) e use uma única instância. Para várias instâncias, migre para um banco (veja `src/storage/README.md`).
 

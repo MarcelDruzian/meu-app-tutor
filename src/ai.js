@@ -14,6 +14,7 @@
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
 export const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini';
 const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_RETRY_ATTEMPTS = 1;
 
 function positiveInt(value, fallback) {
   const parsed = Number(value);
@@ -57,6 +58,7 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
   const geminiBase = String(env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com').replace(/\/+$/, '');
   const openaiBase = String(env.OPENAI_API_BASE || 'https://api.openai.com').replace(/\/+$/, '');
   const timeoutMs = positiveInt(env.AI_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
+  const retryAttempts = positiveInt(env.AI_RETRY_ATTEMPTS, DEFAULT_RETRY_ATTEMPTS);
 
   const hasGemini = Boolean(geminiKey);
   const hasOpenAI = Boolean(openaiKey);
@@ -166,6 +168,15 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
     }
   }
 
+  function shouldRetry(error) {
+    if (!error) return false;
+    if (error.code === 'timeout' || error.code === 'network') return true;
+    if (error.status === 408 || error.status === 429 || error.status === 500 || error.status === 502 || error.status === 503 || error.status === 504) {
+      return true;
+    }
+    return false;
+  }
+
   return {
     hasGemini,
     hasOpenAI,
@@ -181,22 +192,35 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
      */
     async complete(systemInstruction, userPrompt) {
       if (!hasKey) return null;
-      try {
-        const data = hasGemini
-          ? await callGemini(systemInstruction, userPrompt)
-          : await callOpenAI(systemInstruction, userPrompt);
-        lastCall = { attempted: true, ok: true, error: null, at: new Date().toISOString() };
-        return { data, provider, model };
-      } catch (error) {
-        lastCall = {
-          attempted: true,
-          ok: false,
-          error: error.status ? `HTTP ${error.status}` : (error.code || 'error'),
-          at: new Date().toISOString()
-        };
-        logger.warn(`⚠️  Falha na IA, usando fallback local → ${error.message}`);
-        throw error;
+
+      let lastError;
+      for (let attempt = 0; attempt <= retryAttempts; attempt += 1) {
+        try {
+          const data = hasGemini
+            ? await callGemini(systemInstruction, userPrompt)
+            : await callOpenAI(systemInstruction, userPrompt);
+          lastCall = { attempted: true, ok: true, error: null, at: new Date().toISOString() };
+          return { data, provider, model };
+        } catch (error) {
+          lastError = error;
+          const shouldRetryNow = shouldRetry(error) && attempt < retryAttempts;
+          if (shouldRetryNow) {
+            logger.warn(`⚠️  Falha transitória na IA (tentativa ${attempt + 1}/${retryAttempts + 1}): ${error.message}. Tentando novamente...`);
+            continue;
+          }
+
+          lastCall = {
+            attempted: true,
+            ok: false,
+            error: error.status ? `HTTP ${error.status}` : (error.code || 'error'),
+            at: new Date().toISOString()
+          };
+          logger.warn(`⚠️  Falha na IA, usando fallback local → ${error.message}`);
+          throw error;
+        }
       }
+
+      throw lastError;
     },
 
     /** Registra que a IA respondeu, mas com um JSON fora do formato esperado (conta como fallback). */
