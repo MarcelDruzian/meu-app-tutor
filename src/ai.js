@@ -14,7 +14,8 @@
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
 export const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini';
 const DEFAULT_TIMEOUT_MS = 30_000;
-const DEFAULT_RETRY_ATTEMPTS = 1;
+const DEFAULT_RETRY_ATTEMPTS = 3;
+const DEFAULT_BACKOFF_MS = 1_000;
 
 function positiveInt(value, fallback) {
   const parsed = Number(value);
@@ -59,12 +60,18 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
   const openaiBase = String(env.OPENAI_API_BASE || 'https://api.openai.com').replace(/\/+$/, '');
   const timeoutMs = positiveInt(env.AI_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
   const retryAttempts = positiveInt(env.AI_RETRY_ATTEMPTS, DEFAULT_RETRY_ATTEMPTS);
+  const backoffMs = positiveInt(env.AI_BACKOFF_MS, DEFAULT_BACKOFF_MS);
 
   const hasGemini = Boolean(geminiKey);
   const hasOpenAI = Boolean(openaiKey);
   const hasKey = hasGemini || hasOpenAI;
-  const provider = hasGemini ? 'Google Gemini' : (hasOpenAI ? 'OpenAI' : 'Modo Demonstração');
-  const model = hasGemini ? geminiModel : (hasOpenAI ? openaiModel : null);
+  let provider = hasGemini ? 'Google Gemini' : (hasOpenAI ? 'OpenAI' : 'Modo Demonstração');
+  let model = hasGemini ? geminiModel : (hasOpenAI ? openaiModel : null);
+  const providerOrder = [];
+  if (hasGemini) providerOrder.push({ id: 'gemini', label: 'Google Gemini', apiModel: geminiModel });
+  if (hasOpenAI) providerOrder.push({ id: 'openai', label: 'OpenAI', apiModel: openaiModel });
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   // Estado da última chamada (para /api/status).
   let lastCall = { attempted: false, ok: null, error: null, at: null };
@@ -170,7 +177,7 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
 
   function shouldRetry(error) {
     if (!error) return false;
-    if (error.code === 'timeout' || error.code === 'network') return true;
+    if (error.code === 'timeout' || error.code === 'network') return false;
     if (error.status === 408 || error.status === 429 || error.status === 500 || error.status === 502 || error.status === 503 || error.status === 504) {
       return true;
     }
@@ -193,31 +200,46 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
     async complete(systemInstruction, userPrompt) {
       if (!hasKey) return null;
 
-      let lastError;
-      for (let attempt = 0; attempt <= retryAttempts; attempt += 1) {
-        try {
-          const data = hasGemini
-            ? await callGemini(systemInstruction, userPrompt)
-            : await callOpenAI(systemInstruction, userPrompt);
-          lastCall = { attempted: true, ok: true, error: null, at: new Date().toISOString() };
-          return { data, provider, model };
-        } catch (error) {
-          lastError = error;
-          const shouldRetryNow = shouldRetry(error) && attempt < retryAttempts;
-          if (shouldRetryNow) {
-            logger.warn(`⚠️  Falha transitória na IA (tentativa ${attempt + 1}/${retryAttempts + 1}): ${error.message}. Tentando novamente...`);
-            continue;
-          }
+      let lastError = null;
+      for (let providerIndex = 0; providerIndex < providerOrder.length; providerIndex += 1) {
+        const activeProvider = providerOrder[providerIndex];
 
-          lastCall = {
-            attempted: true,
-            ok: false,
-            error: error.status ? `HTTP ${error.status}` : (error.code || 'error'),
-            at: new Date().toISOString()
-          };
-          logger.warn(`⚠️  Falha na IA, usando fallback local → ${error.message}`);
-          throw error;
+        for (let attempt = 0; attempt <= retryAttempts; attempt += 1) {
+          try {
+            const data = activeProvider.id === 'gemini'
+              ? await callGemini(systemInstruction, userPrompt)
+              : await callOpenAI(systemInstruction, userPrompt);
+
+            provider = activeProvider.label;
+            model = activeProvider.apiModel;
+            lastCall = { attempted: true, ok: true, error: null, at: new Date().toISOString() };
+            return { data, provider, model };
+          } catch (error) {
+            lastError = error;
+            const retryNow = shouldRetry(error) && attempt < retryAttempts;
+            if (retryNow) {
+              const waitMs = backoffMs * (attempt + 1);
+              logger.warn(`⚠️  Falha transitória na IA em ${activeProvider.label} (tentativa ${attempt + 1}/${retryAttempts + 1}): ${error.message}. Tentando novamente em ${waitMs}ms...`);
+              await sleep(waitMs);
+              continue;
+            }
+            break;
+          }
         }
+
+        if (providerIndex < providerOrder.length - 1) {
+          logger.warn(`⚠️  ${activeProvider.label} indisponível; tentando provedor alternativo...`);
+          continue;
+        }
+
+        lastCall = {
+          attempted: true,
+          ok: false,
+          error: lastError?.status ? `HTTP ${lastError.status}` : (lastError?.code || 'error'),
+          at: new Date().toISOString()
+        };
+        logger.warn(`⚠️  Falha na IA, usando fallback local → ${lastError?.message || 'erro desconhecido'}`);
+        throw lastError;
       }
 
       throw lastError;
