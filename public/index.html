@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -27,19 +27,36 @@
   <header class="app-header">
     <div class="header-container">
       <div class="brand-link" id="btnLogoHome" role="button" tabindex="0" title="Ir para o início">
-        <div class="mascot-avatar">
-          <!-- Ícone do Mascote Tutor IA (Corujinha/Robô didático) -->
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 2a9 9 0 0 0-9 9c0 4.1 2.8 7.6 6.7 8.7L9 22h6l-.7-2.3C18.2 18.6 21 15.1 21 11a9 9 0 0 0-9-9zm-3.5 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm7 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/>
+        <div class="mascot-avatar" aria-hidden="true">
+          <svg viewBox="0 0 64 64" role="img" aria-label="Logo do Tutor IA">
+            <defs>
+              <linearGradient id="brandHeroGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#2459F0"/>
+                <stop offset="100%" stop-color="#FF8A1F"/>
+              </linearGradient>
+            </defs>
+            <circle cx="32" cy="32" r="26" fill="rgba(36, 89, 240, 0.10)" stroke="currentColor" stroke-width="2"/>
+            <path d="M16 22L32 12L48 22L32 32L16 22Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 26V37.5C21 42 26 45.5 32 45.5C38 45.5 43 42 43 37.5V26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 32V50" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <path d="M24 18L32 14L40 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="48" cy="19" r="4" fill="url(#brandHeroGradient)" stroke="currentColor" stroke-width="2"/>
+            <path d="M53 25L58 30M58 25L53 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="14" cy="42" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+            <circle cx="50" cy="42" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
           </svg>
         </div>
         <div class="brand-info">
           <h1>Tutor IA</h1>
-          <span>Apoio aos Estudos</span>
+          <span>Seu estudo inteligente</span>
         </div>
       </div>
 
       <div class="header-status">
+        <button class="theme-toggle" id="themeToggleBtn" type="button" aria-label="Alternar tema claro e escuro" aria-pressed="false">
+          <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+          <span class="theme-toggle-text">Modo escuro</span>
+        </button>
         <div class="demo-pill" id="headerStatusPill" title="Status da IA">
           <span class="pulse-dot" id="headerPulseDot"></span>
           <span id="headerStatusText">Etapa 2 · Demo</span>
@@ -63,13 +80,23 @@
          ====================================================== -->
     <section class="screen active" id="screenWelcome" aria-labelledby="welcomeTitle">
       <div class="welcome-hero">
-        <div class="welcome-mascot-card">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M9 10h.01M15 10h.01"/>
-            <path d="M8 15c1.5 1.5 6.5 1.5 8 0"/>
-            <path d="M12 3v2"/>
-            <circle cx="12" cy="3" r="1" fill="#4F46E5"/>
+        <div class="welcome-mascot-card" aria-hidden="true">
+          <svg viewBox="0 0 64 64" role="img" aria-label="Mascote do Tutor IA">
+            <defs>
+              <linearGradient id="heroBrand" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#2459F0"/>
+                <stop offset="100%" stop-color="#FF8A1F"/>
+              </linearGradient>
+            </defs>
+            <circle cx="32" cy="32" r="26" fill="rgba(36, 89, 240, 0.10)" stroke="currentColor" stroke-width="2"/>
+            <path d="M16 22L32 12L48 22L32 32L16 22Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 26V37.5C21 42 26 45.5 32 45.5C38 45.5 43 42 43 37.5V26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 32V50" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <path d="M24 18L32 14L40 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="48" cy="19" r="4" fill="url(#heroBrand)" stroke="currentColor" stroke-width="2"/>
+            <path d="M53 25L58 30M58 25L53 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="14" cy="42" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+            <circle cx="50" cy="42" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
           </svg>
         </div>
 

@@ -66,6 +66,33 @@ function updateBottomNavState(screenId) {
   }
 }
 
+function applyTheme(theme) {
+  const normalizedTheme = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', normalizedTheme);
+  const toggleBtn = document.getElementById('themeToggleBtn');
+  if (toggleBtn) {
+    const isDark = normalizedTheme === 'dark';
+    toggleBtn.setAttribute('aria-pressed', String(isDark));
+    toggleBtn.setAttribute('aria-label', isDark ? 'Alternar para tema claro' : 'Alternar para tema escuro');
+    const icon = toggleBtn.querySelector('.theme-toggle-icon');
+    const text = toggleBtn.querySelector('.theme-toggle-text');
+    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+    if (text) text.textContent = isDark ? 'Modo claro' : 'Modo escuro';
+  }
+  localStorage.setItem('tutor-theme', normalizedTheme);
+}
+
+function initThemeToggle() {
+  const savedTheme = localStorage.getItem('tutor-theme');
+  const preferredTheme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : 'light';
+  applyTheme(preferredTheme);
+
+  document.getElementById('themeToggleBtn')?.addEventListener('click', () => {
+    const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
+  });
+}
+
 // ==========================================================
 // SISTEMA DE NOTIFICAÇÕES (TOASTS)
 // ==========================================================
@@ -115,14 +142,24 @@ function initFormatSelection() {
   const formatCards = document.querySelectorAll('.format-card');
   formatCards.forEach(card => {
     card.addEventListener('click', () => {
-      formatCards.forEach(c => c.classList.remove('selected'));
+      formatCards.forEach(c => {
+        c.classList.remove('selected');
+        c.setAttribute('aria-pressed', 'false');
+      });
       card.classList.add('selected');
+      card.setAttribute('aria-pressed', 'true');
       const radio = card.querySelector('input[type="radio"]');
       if (radio) {
         radio.checked = true;
         state.format = radio.value;
       }
     });
+  });
+
+  formatCards.forEach(card => {
+    const radio = card.querySelector('input[type="radio"]');
+    const isSelected = radio?.checked;
+    card.setAttribute('aria-pressed', String(Boolean(isSelected)));
   });
 
   document.getElementById('btnStartResearch')?.addEventListener('click', () => {
@@ -977,6 +1014,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnLogoHome')?.addEventListener('click', () => {
     switchScreen('screenWelcome');
   });
+
+  initThemeToggle();
 
   // Verifica status da IA
   checkAndApplyApiStatus();
