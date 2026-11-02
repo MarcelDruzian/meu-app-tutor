@@ -24,8 +24,9 @@ Documento baseado na implementacao atual do projeto.
 - Prioridade de selecao: Gemini quando GEMINI_API_KEY esta configurada; caso contrario,
   OpenAI quando OPENAI_API_KEY esta configurada.
 - Google Gemini:
-  - Modelo padrao: gemini-3.8-flash, configuravel por GEMINI_MODEL (o gemini-1.5-flash foi
-    desligado pelo Google em 29/09/2025).
+  - Modelo padrao: gemini-3.8-flash, configuravel por GEMINI_MODEL; o cliente tenta
+    uma lista de modelos conhecidos para manter a app ativa mesmo quando um modelo e
+    rejeitado pelo provedor.
   - Endpoint: https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent
   - A chave e enviada no cabecalho x-goog-api-key (nao na URL).
   - Formato de resposta solicitado: JSON.

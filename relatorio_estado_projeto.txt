@@ -1,0 +1,193 @@
+RELATÓRIO DE ESTADO DO PROJETO - TUTOR IA
+==================================================
+
+DATA: 2026-11-02
+
+1) O QUE ESTÁ IMPLEMENTADO
+--------------------------------
+
+1.1 Backend em Node.js
+- Arquivo principal: server.js
+- O app inicia um servidor HTTP em Node.
+- Carrega variáveis locais do arquivo .env automaticamente.
+- Detecta ambiente em nuvem (Render, Railway, etc.) e ajusta configuração.
+- Expõe endpoints como:
+  - /api/status
+  - /api/tutor/explain
+  - /api/tutor/quiz
+  - /api/auth/login
+  - /api/auth/register
+  - /api/auth/me
+  - /api/auth/logout
+
+1.2 Sistema de armazenamento
+- Arquivo de suporte: src/storage/index.js
+- Driver atual: json
+- Armazena dados locais em pasta data/ (ou DATA_DIR configurado).
+- Mantém registros de usuários, sessões e conteúdo de uso local.
+
+1.3 Cliente de IA
+- Arquivo: src/ai.js
+- Implementa lógica para usar Gemini e OpenAI.
+- Prioriza Gemini quando existe GEMINI_API_KEY.
+- A lógica tenta modelos alternativos em sequência para reduzir falhas.
+- Possui timeout e retry com backoff.
+- Guarda o estado da última chamada para status da aplicação.
+- Em caso de falha externa, cai no fallback de conteúdo demonstrativo.
+
+1.4 Prompts e conteúdo de apoio
+- Arquivo: src/prompts.js
+- Monta prompts de explicação e quiz para uso com IA.
+
+1.5 Dados demo/fallback
+- Arquivo: public/js/data/demoData.js
+- Gera conteúdos estruturados para contingência quando a IA falha.
+- Esse conteúdo é o que aparece em isDemo=True.
+
+1.6 Proteção e rate limiting
+- Arquivo: src/rateLimit.js
+- Implementa limites por IP e por sessão/usuário para evitar abuso.
+
+1.7 Configuração pública do ambiente
+- Arquivo: .env.example
+- Atualizado para remover chaves reais e deixar placeholders e comentários claros.
+
+1.8 Estrutura do projeto atual
+- package.json
+- server.js
+- src/
+- public/
+- data/
+- tests/
+
+2) O QUE ESTÁ FUNCIONANDO
+--------------------------------
+
+2.1 App no Render
+- O serviço está online.
+- /api/status responde com status=online.
+- O retorno observado foi:
+  - status: online
+  - app: tutor-ia
+  - mode: live_ai
+  - hasApiKey: True
+  - provider: Google Gemini
+  - model: gemini-2.0-flash
+  - fallback: False
+  - storage: json
+
+2.2 App local / Node inicialização
+- O projeto inicia com Node e roda normalmente em ambiente local.
+- O carregamento do .env funciona.
+- O servidor aceita requisições HTTP.
+
+2.3 Estrutura do app e rotas principais
+- O backend com roteamento principal já está montado.
+- O status endpoint funciona e responde corretamente.
+
+2.4 Configuração de ambiente do app
+- O app lê corretamente as variáveis de ambiente configuradas no Render e no arquivo .env local.
+- A lógica de provider e fallback foi implementada na camada de IA.
+
+3) O QUE NÃO ESTÁ FUNCIONANDO / NECESSITA CORREÇÃO
+-----------------------------------------------------
+
+3.1 Geração real de IA com Gemini
+- O endpoint real /api/tutor/explain ainda retorna fallback demo:
+  - meta.isDemo=True
+  - notice=Aviso: Houve uma instabilidade momentânea na conexão com a IA...
+- Isso mostra que a chamada real ao provedor externo não está sendo aceita.
+
+3.2 Validação direta do Gemini
+- Teste direto com a chave do AI Studio em endpoint do Gemini retornou HTTP 400.
+- Isso indica problema em:
+  - chave usada
+  - projeto por trás da chave
+  - modelo liberado
+  - billing/uso liberado
+  - configuração do projeto
+  - acesso do projeto ao Gemini
+
+3.3 Fluxo de provider/Google não está validado no nível real
+- A aplicação sabe que o provider é Gemini.
+- Mas isso NÃO garante que a chamada ao Gemini está funcionando.
+- O status mostra apenas configuração e estado, não duração da resposta real.
+
+3.4 Deploy em Netlify
+- O Netlify não é a plataforma correta para este projeto em seu estado atual.
+- Esse app é um backend em Node/HTTP, não um site estático simples.
+- A página "Page not found" é esperada em Netlify para um backend em Node sem configuração de servidor.
+
+3.5 Dependência externa de IA
+- O projeto ainda depende de um provedor externo para responder de forma real.
+- Enquanto esse provedor falhar ou rejeitar a chave, o app cai no fallback demo.
+
+4) EVIDÊNCIAS REAIS OBSERVADAS
+---------------------------------
+
+4.1 Status do Render
+- status: online
+- provider: Google Gemini
+- model: gemini-2.0-flash
+- hasApiKey: True
+- fallback: False
+
+4.2 Requisição real da rota de explicação
+- Resultado: meta.isDemo=True
+- Isso confirma que o conteúdo real não foi gerado.
+
+4.3 Teste direto da API Gemini com chave do AI Studio
+- Resultado: HTTP 400 Solicitação Incorreta.
+- Isso confirma que o problema é do Google provider/chave/projeto e não do Node app em si.
+
+5) CORREÇÕES OBRIGATÓRIAS
+--------------------------------
+
+5.1 Validar a chave do Gemini no projeto correto
+- Confirmar que a chave pertence ao projeto ativo correto.
+- Confirmar que o modelo gemini-2.0-flash está liberado.
+- Confirmar que o projeto tem faturamento/uso ativo.
+
+5.2 Criar nova chave se necessário
+- Não reutilizar chave antiga que pode estar ligada a projeto bloqueado ou sem acesso.
+- Preferir gerar uma nova chave em projeto novo e válido.
+
+5.3 Ajustar variáveis no Render
+- GEMINI_API_KEY = chave válida
+- GEMINI_MODEL = modelo válido e liberado (ex.: gemini-2.0-flash)
+- Remover ou desativar OPENAI_API_KEY se não for usado.
+
+5.4 Redefinir a estratégia se provider continuar bloqueado
+- Se o Google continuar rejeitando a chamada, a solução estável é deixar a aplicação responder por base local de conhecimento em vez de depender de IA externa.
+
+5.5 Não usar Netlify como host do backend atual
+- Render, Railway, Fly.io, VPS, Azure App Service etc. são compatíveis com este projeto atual.
+
+6) CONCLUSÃO
+--------------
+
+O projeto está funcional em termos de estrutura, backend, rotas, status e fallback, e o código já está preparado para uso de IA externa.
+
+O que ainda está quebrado de verdade é a INTEGRAÇÃO REAL COM O GOOGLE GEMINI: as requisições de geração retornam falha e o app entra em fallback demo.
+
+A correção principal não está mais no código do app, e sim na configuração real do projeto/chave/modelo do Google.
+
+Se o provedor continuar rejeitando as chamadas, o melhor caminho para manter o projeto estável e funcional é substituir a resposta real por conteúdo local (base de conhecimento), deixando a IA externa como opção secundária e não obrigatória.
+
+7) PRÓXIMO PASSO RECOMENDADO
+----------------------------
+
+Opção 1 (persistir em Gemini):
+- validar projeto do Google AI Studio
+- criar nova chave em projeto novo e ativo
+- verificar billing/modelo
+- redeploy no Render
+- testar novamente a rota POST
+
+Opção 2 (mais estável):
+- implementar base local de conteúdo e usar busca local na rota /api/tutor/explain
+- remover dependência direta de IA externa
+- manter o app funcionando sem 401/429/400.
+
+FIM DO RELATÓRIO
+==================================================
