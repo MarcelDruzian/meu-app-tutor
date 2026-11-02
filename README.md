@@ -177,7 +177,7 @@ O app é um único processo Node sem dependências: em Render, Railway, Fly.io e
 
 > ⚠️ **Persistência:** usuários e sessões ficam em arquivos JSON dentro de `DATA_DIR`. Em disco efêmero (padrão da maioria dos planos), esses arquivos são **apagados a cada deploy/reinício**. Anexe um volume persistente à plataforma, aponte `DATA_DIR` para o ponto de montagem (ex.: `/var/data`) e use uma única instância. Para várias instâncias, migre para um banco (veja `src/storage/README.md`).
 
-**Diagnóstico da IA:** `GET /api/status` mostra provedor, modelo, se há chave (nunca a chave), `fallback` (a última chamada de IA falhou?) e `lastAiCall.error`. Os motivos detalhados de cada falha aparecem nos logs da plataforma. Modelo padrão do Gemini: `gemini-3.8-flash`; troque por `GEMINI_MODEL` quando o Google atualizar.
+**Diagnóstico da IA:** `GET /api/status` mostra provedor, modelo, se há chave (nunca a chave), `fallback` (a última chamada de IA falhou?) e `lastAiCall.error`. Os motivos detalhados de cada falha aparecem nos logs da plataforma. O cliente tenta automaticamente modelos estáveis do Gemini/OpenAI e usa o primeiro que responde; em produção, `gemini-3.8-flash` e `gpt-4o-mini` são as escolhas mais confiáveis.
 
 **Atualizações do PWA:** o Service Worker usa "rede primeiro", então novos deploys chegam sozinhos. Se alterar arquivos estáticos, aumente `CACHE_VERSION` em `public/sw.js`.
 

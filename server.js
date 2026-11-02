@@ -883,8 +883,9 @@ async function handleRequest(req, res) {
       const explanationContext = cleanText(payload.explanationContext, FIELD_LIMITS.explanationContext);
 
       const authenticatedUser = await getAuthenticatedUser(req);
+      const useAi = payload.useAi !== false;
 
-      if (ai.hasKey) {
+      if (useAi && ai.hasKey) {
         try {
           const systemPrompt = buildQuizSystemPrompt({ course, subject, topic });
 
@@ -928,7 +929,7 @@ async function handleRequest(req, res) {
         }
       }
 
-      // Fallback de questionário contextualizado
+      // Fallback direto e rápido: as questões já estão pré-definidas para abrir o quiz sem espera de IA.
       const fallbackQuestions = getFallbackQuiz(course, subject, topic, explanationContext);
       const responseBody = {
         meta: {

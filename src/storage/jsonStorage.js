@@ -27,6 +27,8 @@ const clone = value => (value === null || value === undefined ? null : structure
 export function createJsonStorage({ dataDir, logger = console }) {
   const usersFile = path.join(dataDir, 'users.json');
   const sessionsFile = path.join(dataDir, 'auth.json');
+  const progressFile = path.join(dataDir, 'progress.json');
+  const historyFile = path.join(dataDir, 'history.json');
 
   /** @type {Map<string, User>} */
   const usersById = new Map();
@@ -34,6 +36,10 @@ export function createJsonStorage({ dataDir, logger = console }) {
   const userIdByEmail = new Map();
   /** @type {Map<string, { tokenHash: string, userId: string, createdAt: string, expiresAt: string }>} */
   const sessionsByHash = new Map();
+  /** @type {Map<string, Array<any>>} */
+  const progressByUserId = new Map();
+  /** @type {Map<string, Array<any>>} */
+  const historyByUserId = new Map();
 
   // Fila única de escrita: cada gravação só começa quando a anterior terminou.
   let writeChain = Promise.resolve();
@@ -56,6 +62,8 @@ export function createJsonStorage({ dataDir, logger = console }) {
 
   const persistUsers = () => enqueue(() => writeAtomic(usersFile, JSON.stringify([...usersById.values()], null, 2)));
   const persistSessions = () => enqueue(() => writeAtomic(sessionsFile, JSON.stringify([...sessionsByHash.values()], null, 2)));
+  const persistProgress = () => enqueue(() => writeAtomic(progressFile, JSON.stringify([...progressByUserId.entries()].map(([userId, items]) => ({ userId, items })), null, 2)));
+  const persistHistory = () => enqueue(() => writeAtomic(historyFile, JSON.stringify([...historyByUserId.entries()].map(([userId, items]) => ({ userId, items })), null, 2)));
 
   // Lê um arquivo JSON (array). Se estiver corrompido, guarda uma cópia
   // ".corrupt-<data>" para não perder nada e segue com lista vazia, sem derrubar o servidor.
@@ -104,6 +112,8 @@ export function createJsonStorage({ dataDir, logger = console }) {
       }
 
       const sessions = loadArray(sessionsFile);
+      const progress = loadArray(progressFile);
+      const history = loadArray(historyFile);
       let migratedLegacy = 0;
       for (const item of sessions.items) {
         if (!item || typeof item.userId !== 'string' || !item.expiresAt) continue;
@@ -119,9 +129,21 @@ export function createJsonStorage({ dataDir, logger = console }) {
         });
       }
 
+      for (const entry of progress.items) {
+        if (!entry || typeof entry.userId !== 'string' || !Array.isArray(entry.items)) continue;
+        progressByUserId.set(entry.userId, entry.items.map(item => clone(item)));
+      }
+
+      for (const entry of history.items) {
+        if (!entry || typeof entry.userId !== 'string' || !Array.isArray(entry.items)) continue;
+        historyByUserId.set(entry.userId, entry.items.map(item => clone(item)));
+      }
+
       // Garante que os arquivos existam (e regrava sessões migradas sem o token em texto puro).
       if (users.created) await persistUsers();
       if (sessions.created || migratedLegacy > 0) await persistSessions();
+      if (progress.created) await persistProgress();
+      if (history.created) await persistHistory();
       if (migratedLegacy > 0) {
         logger.log(`🔐 ${migratedLegacy} sessão(ões) antiga(s) convertida(s) para armazenamento com hash.`);
       }
@@ -209,6 +231,65 @@ export function createJsonStorage({ dataDir, logger = console }) {
       }
       if (removed > 0) await persistSessions();
       return removed;
+    },
+
+    async getProgress(userId) {
+      return clone(progressByUserId.get(userId) || []);
+    },
+
+    async upsertProgress(userId, item) {
+      if (!userId || !item || typeof item.subject !== 'string' || typeof item.topic !== 'string') {
+        throw new Error('Estrutura de progresso inválida.');
+      }
+      const current = progressByUserId.get(userId) || [];
+      const entryKey = `${String(item.course || 'Geral')}::${item.subject}::${item.topic}`;
+      const idx = current.findIndex(entry => `${String(entry.course || 'Geral')}::${entry.subject}::${entry.topic}` === entryKey);
+      const base = idx >= 0 ? current[idx] : null;
+      const next = {
+        course: String(item.course || 'Geral').trim() || 'Geral',
+        subject: String(item.subject).trim(),
+        topic: String(item.topic).trim(),
+        explanationsSeen: Number(base?.explanationsSeen || 0) + Number(item.explanationsSeen || 0),
+        quizzesAnswered: Number(base?.quizzesAnswered || 0) + Number(item.quizzesAnswered || 0),
+        correctAnswers: Number(base?.correctAnswers || 0) + Number(item.correctAnswers || 0),
+        lastUpdated: new Date().toISOString()
+      };
+
+      if (idx >= 0) {
+        current[idx] = { ...current[idx], ...next };
+      } else {
+        current.unshift(next);
+      }
+
+      progressByUserId.set(userId, current.slice(0, 100));
+      await persistProgress();
+      return clone(progressByUserId.get(userId) || []);
+    },
+
+    async getHistory(userId, limit = 25) {
+      const items = historyByUserId.get(userId) || [];
+      return clone(items.slice(0, limit));
+    },
+
+    async addHistoryEntry(userId, item) {
+      if (!userId || !item || typeof item.subject !== 'string' || typeof item.topic !== 'string') {
+        throw new Error('Estrutura de histórico inválida.');
+      }
+      const list = historyByUserId.get(userId) || [];
+      const record = {
+        id: item.id || `event_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        type: item.type || 'study',
+        course: String(item.course || 'Geral').trim() || 'Geral',
+        subject: String(item.subject).trim(),
+        topic: String(item.topic).trim(),
+        summary: String(item.summary || '').slice(0, 500),
+        question: String(item.question || '').slice(0, 500),
+        createdAt: item.createdAt || new Date().toISOString()
+      };
+      list.unshift(record);
+      historyByUserId.set(userId, list.slice(0, 100));
+      await persistHistory();
+      return clone(historyByUserId.get(userId) || []);
     },
 
     /** Aguarda as gravações pendentes (usado no encerramento do servidor). */

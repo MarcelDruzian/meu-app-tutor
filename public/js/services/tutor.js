@@ -76,7 +76,13 @@ export const TutorService = {
       const response = await fetch('/api/tutor/quiz', {
         method: 'POST',
         headers: getTutorRequestHeaders(),
-        body: JSON.stringify({ course, subject, topic, explanationContext })
+        body: JSON.stringify({
+          course,
+          subject,
+          topic,
+          explanationContext,
+          useAi: false
+        })
       });
 
       if (response.ok) {
@@ -91,7 +97,7 @@ export const TutorService = {
       console.warn('Backend indisponível. Usando gerador de simulado local.', networkErr);
     }
 
-    // Fallback local contextualizado garantido
+    // Fallback local contextualizado garantido e imediato.
     const localQuestions = generateDemoQuiz(course, subject, topic, explanationContext);
     return {
       isDemo: true,

@@ -257,6 +257,36 @@ describe('autenticação', () => {
     assert.equal(wrongPassword.data.error, unknownEmail.data.error, 'a mensagem não pode revelar se o e-mail existe');
   });
 
+  test('progresso e histórico do usuário são persistidos e consultados por sessão', async () => {
+    const s = await startServer();
+    const register = await s.json('POST', '/api/auth/register', { name: 'Clara', email: 'clara@exemplo.com', password: 'senha-forte-3' });
+    const token = register.data.token;
+
+    const explain = await s.json('POST', '/api/tutor/explain', explainBody, { Authorization: `Bearer ${token}` });
+    assert.equal(explain.status, 200);
+
+    const progress = await s.json('GET', '/api/progress', undefined, { Authorization: `Bearer ${token}` });
+    assert.equal(progress.status, 200);
+    assert.ok(Array.isArray(progress.data.progress));
+    assert.ok(progress.data.progress.some(item => item.subject === 'Álgebra' && item.topic === 'Equações'));
+
+    const history = await s.json('GET', '/api/history', undefined, { Authorization: `Bearer ${token}` });
+    assert.equal(history.status, 200);
+    assert.ok(Array.isArray(history.data.history));
+    assert.ok(history.data.history.some(item => item.type === 'explanation' && item.topic === 'Equações'));
+
+    const update = await s.json('POST', '/api/progress', {
+      course: 'Matemática',
+      subject: 'Álgebra',
+      topic: 'Equações',
+      explanationsSeen: 1,
+      quizzesAnswered: 1,
+      correctAnswers: 1
+    }, { Authorization: `Bearer ${token}` });
+    assert.equal(update.status, 200);
+    assert.ok(update.data.progress.some(item => item.subject === 'Álgebra' && item.topic === 'Equações' && item.explanationsSeen >= 1));
+  });
+
   test('senha em scrypt e token de sessão guardado apenas como hash', async () => {
     const s = await startServer();
     const register = await s.json('POST', '/api/auth/register', { name: 'Bia', email: 'bia@exemplo.com', password: 'senha-forte-2' });
