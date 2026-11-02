@@ -42,6 +42,55 @@ export const StorageService = {
     }
   },
 
+  async saveStudySessionRemote(sessionData) {
+    const token = this.getSessionToken();
+    if (!token) return null;
+    try {
+      const response = await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          type: 'explanation',
+          course: sessionData.course,
+          subject: sessionData.subject,
+          topic: sessionData.topic,
+          question: sessionData.question || '',
+          summary: sessionData.summary || ''
+        })
+      });
+      if (!response.ok) return null;
+      const result = await response.json().catch(() => ({}));
+      return result.history || null;
+    } catch (error) {
+      console.warn('Erro ao sincronizar histórico remoto:', error);
+      return null;
+    }
+  },
+
+  async saveQuizResultRemote(resultData) {
+    const token = this.getSessionToken();
+    if (!token) return null;
+    try {
+      const response = await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          type: 'quiz',
+          course: resultData.course,
+          subject: resultData.subject,
+          topic: resultData.topic,
+          summary: `Quiz concluído: ${resultData.score} de ${resultData.total} acertos`
+        })
+      });
+      if (!response.ok) return null;
+      const result = await response.json().catch(() => ({}));
+      return result.history || null;
+    } catch (error) {
+      console.warn('Erro ao sincronizar quiz remoto:', error);
+      return null;
+    }
+  },
+
   // Obter histórico de estudos
   getHistory() {
     if (!isStorageAvailable()) return [];
@@ -86,6 +135,31 @@ export const StorageService = {
       return newQuiz;
     } catch (e) {
       console.warn('Erro ao salvar questionário:', e);
+      return null;
+    }
+  },
+
+  async saveProgressRemote(progressData) {
+    const token = this.getSessionToken();
+    if (!token) return null;
+    try {
+      const response = await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          course: progressData.course,
+          subject: progressData.subject,
+          topic: progressData.topic,
+          explanationsSeen: Number(progressData.explanationsSeen || 0),
+          quizzesAnswered: Number(progressData.quizzesAnswered || 0),
+          correctAnswers: Number(progressData.correctAnswers || 0)
+        })
+      });
+      if (!response.ok) return null;
+      const result = await response.json().catch(() => ({}));
+      return result.progress || null;
+    } catch (error) {
+      console.warn('Erro ao sincronizar progresso remoto:', error);
       return null;
     }
   },

@@ -328,7 +328,7 @@ function initStudyInfoForm() {
 
       state.currentExplanation = result.explanation;
 
-      // Salva a sessão no histórico local
+      // Salva a sessão no histórico local e no backend quando houver autenticação
       StorageService.saveStudySession({
         course,
         subject,
@@ -337,6 +337,20 @@ function initStudyInfoForm() {
         format: state.format,
         summary: result.explanation.summary
       });
+      StorageService.saveStudySessionRemote({
+        course,
+        subject,
+        topic,
+        question: specificQuestion,
+        format: state.format,
+        summary: result.explanation.summary
+      });
+      StorageService.saveProgressRemote({
+        course,
+        subject,
+        topic,
+        explanationsSeen: 1
+      }).catch(() => {});
 
       // Renderiza os dados na Tela 4
       renderResultScreen(result.explanation, result.meta);
@@ -743,28 +757,110 @@ function finishQuiz() {
     msg.textContent = 'O erro faz parte do aprendizado. Leia novamente o resumo do Tutor IA e tente mais uma vez.';
   }
 
-  // Salvar no histórico
+  // Salvar no histórico local e remoto
   StorageService.saveQuizResult({
     topic: state.topic,
     subject: state.subject,
     score: score,
-    total: total
+    total: total,
+    course: state.course
   });
+  StorageService.saveProgressRemote({
+    course: state.course,
+    subject: state.subject,
+    topic: state.topic,
+    quizzesAnswered: 1,
+    correctAnswers: score
+  }).catch(() => {});
+  StorageService.saveQuizResultRemote({
+    course: state.course,
+    subject: state.subject,
+    topic: state.topic,
+    score,
+    total
+  }).catch(() => {});
 
-  showToast('Resultado salvo no seu progresso local!', 'success');
+  showToast('Resultado salvo no seu progresso local e na conta!', 'success');
 }
 
 // ==========================================================
 // TELA 6: HISTÓRICO E PROGRESSO
 // ==========================================================
-function renderHistoryScreen() {
-  const history = StorageService.getHistory();
-  const quizzes = StorageService.getQuizzes();
-  const goals = StorageService.getGoals();
+async function renderHistoryScreen() {
+  let history = StorageService.getHistory();
+  let quizzes = StorageService.getQuizzes();
+  let goals = StorageService.getGoals();
+
+  const token = StorageService.getSessionToken();
+  if (token) {
+    try {
+      const [historyResponse, progressResponse] = await Promise.all([
+        fetch('/api/history', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/progress', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      if (historyResponse.ok) {
+        const historyData = await historyResponse.json().catch(() => ({}));
+        if (Array.isArray(historyData.history)) {
+          history = historyData.history.map(item => ({
+            id: item.id,
+            date: item.createdAt,
+            course: item.course,
+            subject: item.subject,
+            topic: item.topic,
+            question: item.question || '',
+            format: item.format || 'text',
+            summary: item.summary || ''
+          }));
+        }
+      }
+
+      if (progressResponse.ok) {
+        const progressData = await progressResponse.json().catch(() => ({}));
+        if (Array.isArray(progressData.progress)) {
+          const totalQuizzes = progressData.progress.reduce((sum, item) => sum + Number(item.quizzesAnswered || 0), 0);
+          const totalCorrect = progressData.progress.reduce((sum, item) => sum + Number(item.correctAnswers || 0), 0);
+          const totalStudies = progressData.progress.reduce((sum, item) => sum + Number(item.explanationsSeen || 0), 0);
+          quizzes = progressData.progress.map(item => ({
+            id: `${item.topic}-${item.subject}`,
+            date: item.lastUpdated,
+            topic: item.topic,
+            subject: item.subject,
+            score: Number(item.correctAnswers || 0),
+            total: Number(item.quizzesAnswered || 0) || 1,
+            percentage: Number(item.quizzesAnswered || 0) > 0 ? Math.round((Number(item.correctAnswers || 0) / Number(item.quizzesAnswered || 0)) * 100) : 0
+          }));
+          if (totalStudies > 0 || totalQuizzes > 0) {
+            document.getElementById('statTotalStudies').textContent = String(totalStudies);
+            document.getElementById('statQuizzesDone').textContent = String(totalQuizzes);
+            document.getElementById('goalProgressLabel').textContent = `${totalCorrect} acertos · ${totalQuizzes} quizzes`;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Não foi possível carregar o histórico remoto:', error);
+    }
+  }
+
+  const focusValue = document.getElementById('insightFocusValue');
+  const accuracyValue = document.getElementById('insightAccuracyValue');
+  const nextValue = document.getElementById('insightNextValue');
+
+  const recentTopics = history.slice(0, 6);
+  const lastTopic = recentTopics.find(item => item.topic)?.topic || 'Nenhum tema';
+  const totalQuizAttempts = quizzes.reduce((sum, item) => sum + Number(item.total || 0), 0);
+  const totalQuizCorrect = quizzes.reduce((sum, item) => sum + Number(item.score || 0), 0);
+  const accuracyPct = totalQuizAttempts > 0 ? Math.round((totalQuizCorrect / totalQuizAttempts) * 100) : 0;
+
+  if (focusValue) focusValue.textContent = lastTopic.length > 18 ? `${lastTopic.slice(0, 18)}…` : lastTopic;
+  if (accuracyValue) accuracyValue.textContent = `${accuracyPct}%`;
+  if (nextValue) {
+    nextValue.textContent = recentTopics.length > 0 ? 'Revisar' : 'Estudar';
+  }
 
   // Estatísticas
-  document.getElementById('statTotalStudies').textContent = history.length;
-  document.getElementById('statQuizzesDone').textContent = quizzes.length;
+  document.getElementById('statTotalStudies').textContent = String(history.length);
+  document.getElementById('statQuizzesDone').textContent = String(quizzes.length);
   document.getElementById('statStreakDays').textContent = `${goals.streak || 1}🔥`;
 
   // Meta diária
@@ -789,16 +885,17 @@ function renderHistoryScreen() {
   }
 
   container.innerHTML = history.map(item => {
-    const dateFormatted = new Date(item.date).toLocaleDateString('pt-BR', {
+    const dateValue = item.date || item.createdAt || new Date().toISOString();
+    const dateFormatted = new Date(dateValue).toLocaleDateString('pt-BR', {
       day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
     });
     return `
       <div class="history-item-card" data-history-id="${item.id}">
         <div class="history-item-header">
-          <span class="history-course-tag">${item.course} · ${item.subject}</span>
+          <span class="history-course-tag">${item.course || 'Geral'} · ${item.subject || 'Tema'}</span>
           <span class="history-date">${dateFormatted}</span>
         </div>
-        <div class="history-title">${item.topic}</div>
+        <div class="history-title">${item.topic || 'Tema de estudo'}</div>
         <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.3;">
           ${item.summary ? item.summary.slice(0, 110) + '...' : 'Revisão com o Tutor IA'}
         </p>
@@ -810,24 +907,24 @@ function renderHistoryScreen() {
   container.querySelectorAll('.history-item-card').forEach(card => {
     card.addEventListener('click', async () => {
       const histId = card.dataset.historyId;
-      const item = history.find(h => h.id === histId);
+      const item = history.find(h => String(h.id) === String(histId));
       if (item) {
-        state.course = item.course;
-        state.subject = item.subject;
-        state.topic = item.topic;
+        state.course = item.course || 'Geral';
+        state.subject = item.subject || 'Tema';
+        state.topic = item.topic || 'Tema';
         state.specificQuestion = item.question || '';
         state.format = item.format || 'text';
 
-        showToast(`Reabrindo estudo sobre ${item.topic}...`, 'info');
+        showToast(`Reabrindo estudo sobre ${state.topic}...`, 'info');
         const result = await TutorService.requestExplanation({
-          course: item.course,
-          subject: item.subject,
-          topic: item.topic,
-          question: item.question,
-          format: item.format
+          course: state.course,
+          subject: state.subject,
+          topic: state.topic,
+          question: state.specificQuestion,
+          format: state.format
         });
         state.currentExplanation = result.explanation;
-        renderResultScreen(result.explanation);
+        renderResultScreen(result.explanation, result.meta || {});
         switchScreen('screenResult');
       }
     });

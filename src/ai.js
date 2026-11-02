@@ -9,10 +9,13 @@
 // ==========================================================
 
 // Valores padrão em um único lugar, fáceis de alterar.
-// Confirmados na documentação oficial do Gemini em 26/10/2026:
-// "gemini-1.5-flash" foi desligado em 29/09/2025.
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
-export const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini';
+// Mantemos a escolha principal em Gemini 3.x, mas também inclui modelos mais recentes
+// e estáveis para evitar que a app fique presa a um único nome de modelo.
+// Evitamos expor modelos antigos como 1.5/2.0 como padrão em produção.
+export const DEFAULT_GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash'];
+export const DEFAULT_GEMINI_MODEL = DEFAULT_GEMINI_MODELS[0];
+export const DEFAULT_OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4o'];
+export const DEFAULT_OPENAI_MODEL = DEFAULT_OPENAI_MODELS[0];
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_BACKOFF_MS = 1_000;
@@ -54,27 +57,40 @@ class AiError extends Error {
 export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch, logger = console } = {}) {
   const geminiKey = String(env.GEMINI_API_KEY || '').trim();
   const openaiKey = String(env.OPENAI_API_KEY || '').trim();
-  const geminiModel = String(env.GEMINI_MODEL || '').trim() || DEFAULT_GEMINI_MODEL;
-  const openaiModel = String(env.OPENAI_MODEL || '').trim() || DEFAULT_OPENAI_MODEL;
   const geminiBase = String(env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com').replace(/\/+$/, '');
   const openaiBase = String(env.OPENAI_API_BASE || 'https://api.openai.com').replace(/\/+$/, '');
   const timeoutMs = positiveInt(env.AI_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
   const retryAttempts = positiveInt(env.AI_RETRY_ATTEMPTS, DEFAULT_RETRY_ATTEMPTS);
   const backoffMs = positiveInt(env.AI_BACKOFF_MS, DEFAULT_BACKOFF_MS);
 
+  function normalizeModelCandidates(explicitValue, defaults) {
+    const seen = new Set();
+    const result = [];
+    const sources = [explicitValue, ...defaults];
+    for (const item of sources) {
+      const value = String(item || '').trim();
+      if (!value || seen.has(value)) continue;
+      seen.add(value);
+      result.push(value);
+    }
+    return result.length ? result : defaults;
+  }
+
+  const geminiModels = normalizeModelCandidates(env.GEMINI_MODEL, DEFAULT_GEMINI_MODELS);
+  const openaiModels = normalizeModelCandidates(env.OPENAI_MODEL, DEFAULT_OPENAI_MODELS);
   const hasGemini = Boolean(geminiKey);
   const hasOpenAI = Boolean(openaiKey);
   const hasKey = hasGemini || hasOpenAI;
   let provider = hasGemini ? 'Google Gemini' : (hasOpenAI ? 'OpenAI' : 'Modo Demonstração');
-  let model = hasGemini ? geminiModel : (hasOpenAI ? openaiModel : null);
+  let model = hasGemini ? geminiModels[0] : (hasOpenAI ? openaiModels[0] : null);
   const providerOrder = [];
-  if (hasGemini) providerOrder.push({ id: 'gemini', label: 'Google Gemini', apiModel: geminiModel });
-  if (hasOpenAI) providerOrder.push({ id: 'openai', label: 'OpenAI', apiModel: openaiModel });
+  if (hasGemini) providerOrder.push({ id: 'gemini', label: 'Google Gemini', apiModels: geminiModels });
+  if (hasOpenAI) providerOrder.push({ id: 'openai', label: 'OpenAI', apiModels: openaiModels });
 
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // Estado da última chamada (para /api/status).
-  let lastCall = { attempted: false, ok: null, error: null, at: null };
+  // Estado da última chamada (para /api/status e diagnósticos externos).
+  let lastCall = { attempted: false, ok: null, error: null, errorCode: null, reason: null, provider: null, model: null, at: null };
 
   function sanitize(text) {
     let safe = String(text ?? '');
@@ -116,9 +132,9 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
     }
   }
 
-  async function callGemini(systemInstruction, userPrompt) {
+  async function callGemini(systemInstruction, userPrompt, currentModel) {
     // A chave vai no cabeçalho (e não na URL) para não vazar em logs e mensagens de erro.
-    const url = `${geminiBase}/v1beta/models/${encodeURIComponent(geminiModel)}:generateContent`;
+    const url = `${geminiBase}/v1beta/models/${encodeURIComponent(currentModel)}:generateContent`;
     const payload = {
       contents: [
         {
@@ -126,7 +142,6 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
           parts: [{ text: `${systemInstruction}\n\nREQUISIÇÃO DO ALUNO:\n${userPrompt}` }]
         }
       ],
-      // "temperature" foi descontinuada nos modelos Gemini 3.x (ignorada hoje, erro 400 no futuro).
       generationConfig: { responseMimeType: 'application/json' }
     };
 
@@ -134,23 +149,23 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
       body: JSON.stringify(payload)
-    }, `Gemini (${geminiModel})`);
+    }, `Gemini (${currentModel})`);
 
     const parts = data?.candidates?.[0]?.content?.parts || [];
     const rawText = parts.filter(part => typeof part?.text === 'string' && !part.thought).map(part => part.text).join('');
     if (!rawText.trim()) {
       const reason = data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason || 'sem texto';
-      throw new AiError(`Gemini (${geminiModel}): resposta vazia (${sanitize(reason)})`, { code: 'empty' });
+      throw new AiError(`Gemini (${currentModel}): resposta vazia (${sanitize(reason)})`, { code: 'empty' });
     }
-    return parseJsonOrThrow(rawText, `Gemini (${geminiModel})`);
+    return parseJsonOrThrow(rawText, `Gemini (${currentModel})`);
   }
 
-  async function callOpenAI(systemInstruction, userPrompt) {
+  async function callOpenAI(systemInstruction, userPrompt, currentModel) {
     const data = await request(`${openaiBase}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
       body: JSON.stringify({
-        model: openaiModel,
+        model: currentModel,
         messages: [
           { role: 'system', content: systemInstruction },
           { role: 'user', content: userPrompt }
@@ -158,13 +173,13 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
         response_format: { type: 'json_object' },
         temperature: 0.3
       })
-    }, `OpenAI (${openaiModel})`);
+    }, `OpenAI (${currentModel})`);
 
     const rawText = data?.choices?.[0]?.message?.content;
     if (!rawText || !String(rawText).trim()) {
-      throw new AiError(`OpenAI (${openaiModel}): resposta vazia`, { code: 'empty' });
+      throw new AiError(`OpenAI (${currentModel}): resposta vazia`, { code: 'empty' });
     }
-    return parseJsonOrThrow(rawText, `OpenAI (${openaiModel})`);
+    return parseJsonOrThrow(rawText, `OpenAI (${currentModel})`);
   }
 
   function parseJsonOrThrow(rawText, label) {
@@ -184,6 +199,20 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
     return false;
   }
 
+  function classifyFailure(error, fallbackLabel = 'AI_REQUEST_FAILED') {
+    if (!error) return fallbackLabel;
+    if (error.code === 'invalid_json') return 'GEMINI_INVALID_RESPONSE';
+    if (error.code === 'empty') return 'GEMINI_EMPTY_RESPONSE';
+    if (error.code === 'timeout') return 'GEMINI_TIMEOUT';
+    if (error.code === 'network') return 'GEMINI_NETWORK_ERROR';
+    if (error.status === 400) return 'GEMINI_BAD_REQUEST';
+    if (error.status === 401 || error.status === 403) return 'GEMINI_AUTH_ERROR';
+    if (error.status === 404) return 'GEMINI_MODEL_NOT_FOUND';
+    if (error.status === 429) return 'GEMINI_RATE_LIMIT';
+    if (error.status === 500 || error.status === 502 || error.status === 503 || error.status === 504) return 'GEMINI_PROVIDER_ERROR';
+    return fallbackLabel;
+  }
+
   return {
     hasGemini,
     hasOpenAI,
@@ -191,6 +220,11 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
     provider,
     model,
     timeoutMs,
+    getHealthState() {
+      if (!hasKey) return 'demo';
+      if (!lastCall.attempted) return 'configured';
+      return lastCall.ok === true ? 'healthy' : 'degraded';
+    },
 
     /**
      * Pede uma resposta JSON ao provedor ativo.
@@ -204,26 +238,51 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
       for (let providerIndex = 0; providerIndex < providerOrder.length; providerIndex += 1) {
         const activeProvider = providerOrder[providerIndex];
 
-        for (let attempt = 0; attempt <= retryAttempts; attempt += 1) {
-          try {
-            const data = activeProvider.id === 'gemini'
-              ? await callGemini(systemInstruction, userPrompt)
-              : await callOpenAI(systemInstruction, userPrompt);
+        for (let modelIndex = 0; modelIndex < activeProvider.apiModels.length; modelIndex += 1) {
+          const activeModel = activeProvider.apiModels[modelIndex];
 
-            provider = activeProvider.label;
-            model = activeProvider.apiModel;
-            lastCall = { attempted: true, ok: true, error: null, at: new Date().toISOString() };
-            return { data, provider, model };
-          } catch (error) {
-            lastError = error;
-            const retryNow = shouldRetry(error) && attempt < retryAttempts;
-            if (retryNow) {
-              const waitMs = backoffMs * (attempt + 1);
-              logger.warn(`⚠️  Falha transitória na IA em ${activeProvider.label} (tentativa ${attempt + 1}/${retryAttempts + 1}): ${error.message}. Tentando novamente em ${waitMs}ms...`);
-              await sleep(waitMs);
-              continue;
+          for (let attempt = 0; attempt <= retryAttempts; attempt += 1) {
+            try {
+              const startedAt = Date.now();
+              const data = activeProvider.id === 'gemini'
+                ? await callGemini(systemInstruction, userPrompt, activeModel)
+                : await callOpenAI(systemInstruction, userPrompt, activeModel);
+
+              provider = activeProvider.label;
+              model = activeModel;
+              lastCall = {
+                attempted: true,
+                ok: true,
+                error: null,
+                errorCode: null,
+                reason: 'SUCCESS',
+                provider,
+                model,
+                at: new Date().toISOString(),
+                latencyMs: Date.now() - startedAt
+              };
+              return { data, provider, model };
+            } catch (error) {
+              lastError = error;
+              const failureReason = classifyFailure(error, 'AI_REQUEST_FAILED');
+              const shouldAdvanceModel = error?.status === 400 || error?.status === 404 || error?.code === 'invalid_json' || error?.code === 'empty';
+              const retryNow = shouldRetry(error) && attempt < retryAttempts;
+              if (retryNow) {
+                const waitMs = backoffMs * (attempt + 1);
+                logger.warn(`⚠️  Falha transitória na IA em ${activeProvider.label} (${activeModel}) (${failureReason}) (tentativa ${attempt + 1}/${retryAttempts + 1}): ${error.message}. Tentando novamente em ${waitMs}ms...`);
+                await sleep(waitMs);
+                continue;
+              }
+              if (shouldAdvanceModel && modelIndex < activeProvider.apiModels.length - 1) {
+                logger.warn(`⚠️  ${activeProvider.label} (${activeModel}) rejeitou a requisição (${failureReason}); tentando modelo alternativo...`);
+                break;
+              }
+              break;
             }
-            break;
+          }
+
+          if (modelIndex < activeProvider.apiModels.length - 1) {
+            continue;
           }
         }
 
@@ -232,13 +291,18 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
           continue;
         }
 
+        const failureReason = classifyFailure(lastError, 'AI_REQUEST_FAILED');
         lastCall = {
           attempted: true,
           ok: false,
           error: lastError?.status ? `HTTP ${lastError.status}` : (lastError?.code || 'error'),
+          errorCode: lastError?.status || lastError?.code || failureReason,
+          reason: failureReason,
+          provider: activeProvider.label,
+          model: model || activeProvider.apiModels[activeProvider.apiModels.length - 1],
           at: new Date().toISOString()
         };
-        logger.warn(`⚠️  Falha na IA, usando fallback local → ${lastError?.message || 'erro desconhecido'}`);
+        logger.warn(`⚠️  Falha na IA, usando fallback local [${failureReason}] → ${lastError?.message || 'erro desconhecido'}`);
         throw lastError;
       }
 
@@ -247,19 +311,40 @@ export function createAiClient(env = process.env, { fetchImpl = globalThis.fetch
 
     /** Registra que a IA respondeu, mas com um JSON fora do formato esperado (conta como fallback). */
     noteInvalidResponse(reason) {
-      lastCall = { attempted: true, ok: false, error: 'invalid_format', at: new Date().toISOString() };
+      lastCall = {
+        attempted: true,
+        ok: false,
+        error: 'invalid_format',
+        errorCode: 'GEMINI_INVALID_RESPONSE',
+        reason: 'GEMINI_INVALID_RESPONSE',
+        provider,
+        model,
+        at: new Date().toISOString()
+      };
       logger.warn(`⚠️  A IA respondeu com formato inesperado (${reason}); usando fallback local.`);
     },
 
     /** Resumo seguro para GET /api/status (nunca inclui a chave). */
     describe() {
+      const health = this.getHealthState();
       return {
         provider,
         model,
         hasApiKey: hasKey,
         // true quando não há chave (modo demonstração) ou quando a última chamada de IA falhou.
         fallback: !hasKey || lastCall.ok === false,
-        lastAiCall: lastCall.attempted ? { ok: lastCall.ok, error: lastCall.error, at: lastCall.at } : null
+        health,
+        status: health === 'healthy' ? 'online' : (health === 'configured' ? 'configured' : 'degraded'),
+        validation: hasKey ? (lastCall.ok === true ? 'validated' : 'not_validated') : 'demo',
+        lastAiCall: lastCall.attempted ? {
+          ok: lastCall.ok,
+          error: lastCall.error,
+          errorCode: lastCall.errorCode,
+          reason: lastCall.reason,
+          provider: lastCall.provider,
+          model: lastCall.model,
+          at: lastCall.at
+        } : null
       };
     }
   };

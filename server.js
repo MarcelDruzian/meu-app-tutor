@@ -272,6 +272,26 @@ async function getAuthenticatedUser(req) {
   return storage.findUserById(session.userId);
 }
 
+async function saveUserProgress(userId, { course, subject, topic, explanationsSeen = 0, quizzesAnswered = 0, correctAnswers = 0 } = {}) {
+  if (!userId) return null;
+  try {
+    return await storage.upsertProgress(userId, { course, subject, topic, explanationsSeen, quizzesAnswered, correctAnswers });
+  } catch (error) {
+    console.warn('⚠️  Não foi possível salvar progresso do usuário:', error.message);
+    return null;
+  }
+}
+
+async function saveUserHistory(userId, { type = 'study', course, subject, topic, summary = '', question = '' } = {}) {
+  if (!userId) return null;
+  try {
+    return await storage.addHistoryEntry(userId, { type, course, subject, topic, summary, question });
+  } catch (error) {
+    console.warn('⚠️  Não foi possível salvar histórico do usuário:', error.message);
+    return null;
+  }
+}
+
 // ========================================================
 // UTILITÁRIOS HTTP
 // ========================================================
@@ -493,6 +513,8 @@ async function handleRequest(req, res) {
   // ROTA: STATUS DA API E MODELO (também serve como health check da plataforma)
   if (req.method === 'GET' && pathname === '/api/status') {
     const aiInfo = ai.describe();
+    const health = aiInfo.health || 'configured';
+    const validation = aiInfo.validation || (ai.hasKey ? 'not_validated' : 'demo');
     return sendJson(res, 200, {
       status: 'online',
       app: 'tutor-ia',
@@ -502,13 +524,62 @@ async function handleRequest(req, res) {
       provider: ai.provider,
       model: aiInfo.model,
       fallback: aiInfo.fallback,
+      health,
+      validation,
+      statusHealth: health,
       lastAiCall: aiInfo.lastAiCall,
       storage: storage.driver,
       message: ai.hasKey
-        ? `Tutor IA operando com inteligência artificial ativa em tempo real (${ai.provider}).`
+        ? (health === 'healthy'
+          ? `Tutor IA operando com inteligência artificial ativa em tempo real (${ai.provider}).`
+          : `Configuração do provedor ativada, mas a integração ainda não foi validada em produção (${ai.provider}).`)
         : 'Modo Demonstração ativo: adicione sua GEMINI_API_KEY no arquivo .env para ativar respostas em tempo real.',
       version: '2.1.0'
     });
+  }
+
+  if (req.method === 'GET' && pathname === '/api/ai/diagnostic') {
+    if (!ai.hasKey) {
+      return sendJson(res, 200, {
+        ok: false,
+        mode: 'demo',
+        reason: 'NO_AI_KEY',
+        provider: ai.provider,
+        model: ai.model,
+        message: 'Nenhuma chave de IA configurada. O diagnóstico real só funciona com provedor ativo.'
+      });
+    }
+
+    const startedAt = Date.now();
+    try {
+      const result = await ai.complete(
+        'Você é um assistente diagnóstico. Responda em JSON estritamente válido.',
+        'Teste diagnóstico: responda em português: 2 + 2 = ?'
+      );
+      return sendJson(res, 200, {
+        ok: true,
+        mode: 'live_ai',
+        provider: result.provider,
+        model: result.model,
+        latencyMs: Date.now() - startedAt,
+        validation: 'validated',
+        reason: 'SUCCESS',
+        message: 'Diagnóstico do provedor concluído com sucesso.'
+      });
+    } catch (error) {
+      const info = ai.describe();
+      return sendJson(res, 200, {
+        ok: false,
+        mode: 'live_ai',
+        provider: ai.provider,
+        model: info.model,
+        latencyMs: Date.now() - startedAt,
+        validation: 'not_validated',
+        reason: info.lastAiCall?.reason || 'AI_REQUEST_FAILED',
+        httpStatus: info.lastAiCall?.errorCode || null,
+        message: 'Teste de diagnóstico do provedor falhou. A causa foi registrada pelo backend.'
+      });
+    }
   }
 
   // ROTA: CADASTRO
@@ -633,6 +704,78 @@ async function handleRequest(req, res) {
     }
   }
 
+  if (req.method === 'GET' && pathname === '/api/progress') {
+    try {
+      const user = await getAuthenticatedUser(req);
+      if (!user) {
+        return sendJson(res, 401, { error: 'Sessão inválida ou expirada.' });
+      }
+      const progress = await storage.getProgress(user.id);
+      return sendJson(res, 200, { progress });
+    } catch (error) {
+      return sendRouteError(res, error, 'Erro ao buscar progresso do usuário.');
+    }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/progress') {
+    try {
+      const user = await getAuthenticatedUser(req);
+      if (!user) {
+        return sendJson(res, 401, { error: 'Sessão inválida ou expirada.' });
+      }
+
+      const payload = await readRequestBody(req);
+      const progress = await saveUserProgress(user.id, {
+        course: payload.course,
+        subject: payload.subject,
+        topic: payload.topic,
+        explanationsSeen: Number(payload.explanationsSeen || 0),
+        quizzesAnswered: Number(payload.quizzesAnswered || 0),
+        correctAnswers: Number(payload.correctAnswers || 0)
+      });
+
+      return sendJson(res, 200, { progress: progress || [] });
+    } catch (error) {
+      return sendRouteError(res, error, 'Erro ao atualizar progresso do usuário.');
+    }
+  }
+
+  if (req.method === 'GET' && pathname === '/api/history') {
+    try {
+      const user = await getAuthenticatedUser(req);
+      if (!user) {
+        return sendJson(res, 401, { error: 'Sessão inválida ou expirada.' });
+      }
+      const history = await storage.getHistory(user.id, 25);
+      return sendJson(res, 200, { history });
+    } catch (error) {
+      return sendRouteError(res, error, 'Erro ao buscar histórico do usuário.');
+    }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/history') {
+    try {
+      const user = await getAuthenticatedUser(req);
+      if (!user) {
+        return sendJson(res, 401, { error: 'Sessão inválida ou expirada.' });
+      }
+
+      const payload = await readRequestBody(req);
+      const history = await saveUserHistory(user.id, {
+        type: payload.type,
+        course: payload.course,
+        subject: payload.subject,
+        topic: payload.topic,
+        summary: payload.summary,
+        question: payload.question
+      });
+
+      return sendJson(res, 200, { history: history || [] });
+    } catch (error) {
+      return sendRouteError(res, error, 'Erro ao registrar histórico do usuário.');
+    }
+  }
+
   // ROTA: EXPLICAR CONTEÚDO (POST /api/tutor/explain)
   if (req.method === 'POST' && pathname === '/api/tutor/explain') {
     try {
@@ -649,6 +792,8 @@ async function handleRequest(req, res) {
         });
       }
 
+      const authenticatedUser = await getAuthenticatedUser(req);
+
       // Tenta gerar via IA real se a chave estiver configurada
       if (ai.hasKey) {
         try {
@@ -659,8 +804,7 @@ async function handleRequest(req, res) {
           const aiResult = await ai.complete(systemPrompt, userPrompt);
 
           if (aiResult && aiResult.data && aiResult.data.sections) {
-            console.log(`✅ Resposta da IA gerada com sucesso via ${aiResult.provider} (${aiResult.model})!`);
-            return sendJson(res, 200, {
+            const responseBody = {
               meta: {
                 isDemo: false,
                 provider: aiResult.provider,
@@ -674,7 +818,20 @@ async function handleRequest(req, res) {
                 generatedAt: new Date().toISOString()
               },
               tutorExplanation: aiResult.data
-            });
+            };
+            if (authenticatedUser) {
+              await saveUserProgress(authenticatedUser.id, { course, subject, topic, explanationsSeen: 1 });
+              await saveUserHistory(authenticatedUser.id, {
+                type: 'explanation',
+                course,
+                subject,
+                topic,
+                summary: aiResult.data.summary || aiResult.data.title || 'Explicação gerada',
+                question
+              });
+            }
+            console.log(`✅ Resposta da IA gerada com sucesso via ${aiResult.provider} (${aiResult.model})!`);
+            return sendJson(res, 200, responseBody);
           }
           ai.noteInvalidResponse('JSON sem o campo "sections"');
         } catch {
@@ -684,7 +841,7 @@ async function handleRequest(req, res) {
 
       // Fallback didático seguro caso não haja chave ou ocorra falha de rede
       const fallback = getFallbackExplanation(course, subject, topic, question, format);
-      return sendJson(res, 200, {
+      const responseBody = {
         meta: {
           isDemo: true,
           notice: ai.hasKey
@@ -698,7 +855,19 @@ async function handleRequest(req, res) {
           generatedAt: new Date().toISOString()
         },
         tutorExplanation: fallback
-      });
+      };
+      if (authenticatedUser) {
+        await saveUserProgress(authenticatedUser.id, { course, subject, topic, explanationsSeen: 1 });
+        await saveUserHistory(authenticatedUser.id, {
+          type: 'explanation',
+          course,
+          subject,
+          topic,
+          summary: fallback.summary || fallback.title || 'Explicação local',
+          question
+        });
+      }
+      return sendJson(res, 200, responseBody);
     } catch (err) {
       return sendRouteError(res, err, 'Erro ao processar solicitação');
     }
@@ -713,6 +882,8 @@ async function handleRequest(req, res) {
       const topic = cleanText(payload.topic, FIELD_LIMITS.topic) || 'Tópico de Estudo';
       const explanationContext = cleanText(payload.explanationContext, FIELD_LIMITS.explanationContext);
 
+      const authenticatedUser = await getAuthenticatedUser(req);
+
       if (ai.hasKey) {
         try {
           const systemPrompt = buildQuizSystemPrompt({ course, subject, topic });
@@ -726,8 +897,7 @@ async function handleRequest(req, res) {
           const aiResult = await ai.complete(systemPrompt, userPrompt);
 
           if (aiResult && aiResult.data && Array.isArray(aiResult.data.questions) && aiResult.data.questions.length > 0) {
-            console.log(`✅ Questionário gerado com IA via ${aiResult.provider} (${aiResult.model})!`);
-            return sendJson(res, 200, {
+            const responseBody = {
               meta: {
                 isDemo: false,
                 provider: aiResult.provider,
@@ -738,7 +908,19 @@ async function handleRequest(req, res) {
                 totalQuestions: aiResult.data.questions.length
               },
               questions: aiResult.data.questions
-            });
+            };
+            if (authenticatedUser) {
+              await saveUserProgress(authenticatedUser.id, { course, subject, topic, quizzesAnswered: 1 });
+              await saveUserHistory(authenticatedUser.id, {
+                type: 'quiz',
+                course,
+                subject,
+                topic,
+                summary: `Questionário gerado com ${aiResult.provider}`
+              });
+            }
+            console.log(`✅ Questionário gerado com IA via ${aiResult.provider} (${aiResult.model})!`);
+            return sendJson(res, 200, responseBody);
           }
           ai.noteInvalidResponse('JSON sem a lista "questions"');
         } catch {
@@ -748,7 +930,7 @@ async function handleRequest(req, res) {
 
       // Fallback de questionário contextualizado
       const fallbackQuestions = getFallbackQuiz(course, subject, topic, explanationContext);
-      return sendJson(res, 200, {
+      const responseBody = {
         meta: {
           isDemo: true,
           topic,
@@ -757,7 +939,18 @@ async function handleRequest(req, res) {
           totalQuestions: fallbackQuestions.length
         },
         questions: fallbackQuestions
-      });
+      };
+      if (authenticatedUser) {
+        await saveUserProgress(authenticatedUser.id, { course, subject, topic, quizzesAnswered: 1 });
+        await saveUserHistory(authenticatedUser.id, {
+          type: 'quiz',
+          course,
+          subject,
+          topic,
+          summary: 'Questionário didático gerado localmente'
+        });
+      }
+      return sendJson(res, 200, responseBody);
     } catch (err) {
       return sendRouteError(res, err, 'Erro ao gerar questionário');
     }
