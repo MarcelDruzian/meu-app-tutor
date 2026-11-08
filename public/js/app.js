@@ -187,6 +187,30 @@ function initFormatSelection() {
 // ==========================================================
 // TELA 3: INFORMAÇÕES DO ESTUDO E MICROFONE
 // ==========================================================
+function resetStudyInfoForm() {
+  const fields = [
+    { inputId: 'inputCourse', stateKey: 'course' },
+    { inputId: 'inputSubject', stateKey: 'subject' },
+    { inputId: 'inputTopic', stateKey: 'topic' },
+    { inputId: 'inputSpecificQuestion', stateKey: 'specificQuestion' }
+  ];
+
+  fields.forEach(({ inputId, stateKey }) => {
+    const inputEl = document.getElementById(inputId);
+    if (inputEl) {
+      inputEl.value = '';
+      inputEl.classList.remove('input-error');
+    }
+
+    const errorEl = document.getElementById(inputId.replace('input', 'err'));
+    if (errorEl) {
+      errorEl.classList.remove('visible');
+    }
+
+    state[stateKey] = '';
+  });
+}
+
 function initStudyInfoForm() {
   const courseInput = document.getElementById('inputCourse');
   const subjectInput = document.getElementById('inputSubject');
@@ -544,6 +568,7 @@ function initAudioControls() {
   // Botão Fazer Outra Pergunta
   document.getElementById('btnNewSearch')?.addEventListener('click', () => {
     SpeechService.stopSpeech();
+    resetStudyInfoForm();
     switchScreen('screenStudyInfo');
   });
 

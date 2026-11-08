@@ -585,11 +585,18 @@ select {
   font-size: var(--font-size-base);
   font-family: inherit;
   color: var(--text-main);
-  background-color: rgba(13, 25, 41, 0.9);
+  background-color: var(--bg-input);
   border: 1.5px solid rgba(138, 180, 255, 0.18);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   outline: none;
+}
+
+.input-field::placeholder,
+.select-field::placeholder,
+.textarea-field::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
 }
 
 .input-field:focus,
@@ -1392,16 +1399,16 @@ select {
 }
 
 .auth-form-container {
-  background: rgba(12, 23, 38, 0.86);
-  border: 1px solid rgba(138, 180, 255, 0.14);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
   padding: var(--space-5);
   box-shadow: 0 16px 30px rgba(2, 6, 23, 0.18);
 }
 
 .auth-profile-card {
-  background: rgba(12, 23, 38, 0.86);
-  border: 1px solid rgba(138, 180, 255, 0.14);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
   padding: var(--space-5);
   box-shadow: 0 16px 30px rgba(2, 6, 23, 0.18);
@@ -1409,8 +1416,8 @@ select {
 }
 
 #guestAccountCard {
-  background: linear-gradient(135deg, rgba(24, 41, 67, 0.96), rgba(15, 28, 46, 0.94));
-  border: 1px solid rgba(97, 118, 216, 0.2);
+  background: linear-gradient(135deg, var(--bg-card-subtle), var(--bg-card));
+  border: 1px solid var(--border-color);
   box-shadow: 0 16px 34px rgba(3, 7, 18, 0.18);
 }
 
