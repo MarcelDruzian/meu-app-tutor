@@ -795,8 +795,8 @@ async function renderHistoryScreen() {
   if (token) {
     try {
       const [historyResponse, progressResponse] = await Promise.all([
-        fetch('/api/history', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/progress', { headers: { Authorization: `Bearer ${token}` } })
+        fetch('/api/history', { headers: { Authorization: 'Bearer ' + token } }),
+        fetch('/api/progress', { headers: { Authorization: 'Bearer ' + token } })
       ]);
 
       if (historyResponse.ok) {
@@ -943,25 +943,136 @@ async function renderHistoryScreen() {
 // ==========================================================
 // TELA 7: CONTA DO ESTUDANTE
 // ==========================================================
+function getInitials(name, fallback = 'E') {
+  const text = String(name || fallback).trim();
+  if (!text) return fallback.slice(0, 1).toUpperCase();
+  const parts = text.split(/\s+/).filter(Boolean).slice(0, 2);
+  if (parts.length === 0) return fallback.slice(0, 1).toUpperCase();
+  return parts.map(part => part[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function updateHeaderAccountChip() {
+  const chip = document.getElementById('headerAccountChip');
+  const label = document.getElementById('headerAccountLabel');
+  const avatar = document.getElementById('headerAccountAvatar');
+  const account = StorageService.getAccount();
+  const isLoggedIn = Boolean(StorageService.getSessionToken()) && !account.isGuest;
+
+  if (!chip || !label || !avatar) return;
+
+  if (isLoggedIn) {
+    const initials = getInitials(account.name || account.email, 'E');
+    chip.classList.add('is-authenticated');
+    avatar.textContent = initials;
+    label.textContent = (account.name || account.email || 'Conta').split(' ')[0];
+    chip.setAttribute('aria-label', `Abrir conta de ${account.name || account.email || 'usuário'}`);
+  } else {
+    chip.classList.remove('is-authenticated');
+    avatar.textContent = 'E';
+    label.textContent = 'Entrar';
+    chip.setAttribute('aria-label', 'Abrir conta do usuário');
+  }
+}
+
 function renderAccountScreen() {
   const account = StorageService.getAccount();
   const nameEl = document.getElementById('userDisplayName');
   const noticeEl = document.getElementById('userModeNotice');
   const avatarEl = document.getElementById('userAvatarIcon');
+  const profileCard = document.getElementById('authProfileCard');
+  const authFormContainer = document.getElementById('authFormContainer');
+  const profileName = document.getElementById('profileName');
+  const profileEmail = document.getElementById('profileEmail');
+  const profileAvatar = document.getElementById('profileAvatar');
   const hasSession = Boolean(StorageService.getSessionToken());
+  const isLoggedIn = hasSession && !account.isGuest;
 
-  if (account.isGuest && !hasSession) {
+  if (!nameEl || !noticeEl || !avatarEl) return;
+
+  if (!isLoggedIn) {
     nameEl.textContent = 'Estudante Visitante';
-    noticeEl.textContent = 'Modo de teste gratuito · sem cadastro';
-    if (avatarEl) avatarEl.textContent = '🎓';
+    noticeEl.textContent = 'Você está usando como visitante';
+    avatarEl.textContent = '🎓';
+    if (profileCard) profileCard.hidden = true;
+    if (authFormContainer) authFormContainer.style.display = 'block';
     return;
   }
 
   nameEl.textContent = account.name || 'Estudante autenticado';
-  noticeEl.textContent = account.email
-    ? `Conta ativa · ${account.email}`
-    : 'Sessão autenticada em andamento';
-  if (avatarEl) avatarEl.textContent = '✅';
+  noticeEl.textContent = 'Você está logado';
+  avatarEl.textContent = getInitials(account.name || account.email, 'E');
+
+  if (profileCard) profileCard.hidden = false;
+  if (authFormContainer) authFormContainer.style.display = 'none';
+  if (profileName) profileName.textContent = account.name || 'Estudante autenticado';
+  if (profileEmail) profileEmail.textContent = account.email || 'sem e-mail cadastrado';
+  if (profileAvatar) profileAvatar.textContent = getInitials(account.name || account.email, 'E');
+
+  updateHeaderAccountChip();
+}
+
+function setButtonLoading(button, isLoading, label) {
+  if (!button) return;
+
+  const currentLabel = (button.dataset.defaultLabel || button.textContent || '').trim() || 'Continuar';
+  const loadingLabel = label || currentLabel;
+  const spinner = button.querySelector('.btn-spinner');
+
+  if (isLoading) {
+    button.dataset.defaultLabel = currentLabel;
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+
+    if (!spinner) {
+      button.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span><span class="btn-label">' + loadingLabel + '</span>';
+    } else {
+      const labelNode = button.querySelector('.btn-label');
+      if (labelNode) labelNode.textContent = loadingLabel;
+    }
+    return;
+  }
+
+  button.disabled = false;
+  button.setAttribute('aria-busy', 'false');
+  const originalText = button.dataset.defaultLabel || currentLabel;
+  button.innerHTML = '<span class="btn-label">' + originalText + '</span>';
+}
+
+function validateAuthForm() {
+  const mode = document.getElementById('tabBtnRegister')?.classList.contains('active') ? 'register' : 'login';
+  const nameInput = document.getElementById('inputAuthName');
+  const emailInput = document.getElementById('inputAuthEmail');
+  const passwordInput = document.getElementById('inputAuthPassword');
+  const nameError = document.getElementById('errAuthName');
+  const emailError = document.getElementById('errAuthEmail');
+  const passwordError = document.getElementById('errAuthPassword');
+
+  let firstInvalid = null;
+
+  if (mode === 'register') {
+    const isNameValid = (nameInput?.value || '').trim().length >= 2;
+    nameInput?.classList.toggle('input-error', !isNameValid);
+    nameError?.classList.toggle('visible', !isNameValid);
+    if (!isNameValid && !firstInvalid) firstInvalid = nameInput;
+  } else {
+    nameInput?.classList.remove('input-error');
+    nameError?.classList.remove('visible');
+  }
+
+  const emailValue = (emailInput?.value || '').trim();
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+  emailInput?.classList.toggle('input-error', !isEmailValid);
+  emailError?.classList.toggle('visible', !isEmailValid);
+  if (!isEmailValid && !firstInvalid) firstInvalid = emailInput;
+
+  const passwordValue = passwordInput?.value || '';
+  const isPasswordValid = passwordValue.length >= 8;
+  passwordInput?.classList.toggle('input-error', !isPasswordValid);
+  passwordError?.classList.toggle('visible', !isPasswordValid);
+  if (!isPasswordValid && !firstInvalid) firstInvalid = passwordInput;
+
+  firstInvalid?.focus();
+  return !nameError?.classList.contains('visible') && !emailError?.classList.contains('visible') && !passwordError?.classList.contains('visible');
 }
 
 function initAccountScreen() {
@@ -970,43 +1081,51 @@ function initAccountScreen() {
   const groupName = document.getElementById('groupNameRegister');
   const boxForgot = document.getElementById('boxForgotPassword');
   const btnSubmit = document.getElementById('btnSubmitAuth');
+  const togglePassword = document.getElementById('btnTogglePassword');
+  const passwordInput = document.getElementById('inputAuthPassword');
 
   let mode = 'login';
 
-  tabLogin?.addEventListener('click', () => {
-    mode = 'login';
-    tabLogin.classList.add('active');
-    tabRegister.classList.remove('active');
-    groupName.style.display = 'none';
-    boxForgot.style.display = 'block';
-    btnSubmit.textContent = 'Entrar na minha conta';
-  });
+  const applyAuthMode = nextMode => {
+    mode = nextMode;
+    const isRegister = nextMode === 'register';
+    tabLogin?.classList.toggle('active', !isRegister);
+    tabLogin?.setAttribute('aria-selected', String(!isRegister));
+    tabRegister?.classList.toggle('active', isRegister);
+    tabRegister?.setAttribute('aria-selected', String(isRegister));
+    if (groupName) groupName.style.display = isRegister ? 'block' : 'none';
+    if (boxForgot) boxForgot.style.display = isRegister ? 'none' : 'block';
+    if (btnSubmit) {
+      btnSubmit.textContent = isRegister ? 'Criar minha conta gratuita' : 'Entrar na minha conta';
+      btnSubmit.dataset.defaultLabel = btnSubmit.textContent;
+    }
+  };
 
-  tabRegister?.addEventListener('click', () => {
-    mode = 'register';
-    tabRegister.classList.add('active');
-    tabLogin.classList.remove('active');
-    groupName.style.display = 'block';
-    boxForgot.style.display = 'none';
-    btnSubmit.textContent = 'Criar minha conta gratuita';
+  tabLogin?.addEventListener('click', () => applyAuthMode('login'));
+  tabRegister?.addEventListener('click', () => applyAuthMode('register'));
+
+  togglePassword?.addEventListener('click', () => {
+    const showing = passwordInput?.type === 'text';
+    if (passwordInput) {
+      passwordInput.type = showing ? 'password' : 'text';
+    }
+    if (togglePassword) {
+      togglePassword.textContent = showing ? 'Mostrar' : 'Ocultar';
+      togglePassword.setAttribute('aria-label', showing ? 'Mostrar senha' : 'Ocultar senha');
+    }
   });
 
   document.getElementById('btnSubmitAuth')?.addEventListener('click', async () => {
+    const isValid = validateAuthForm();
+    if (!isValid) return;
+
     const email = document.getElementById('inputAuthEmail')?.value.trim();
     const pass = document.getElementById('inputAuthPassword')?.value || '';
     const name = document.getElementById('inputAuthName')?.value.trim();
-
-    if (!email || !pass) {
-      showToast('Por favor, informe e-mail e senha.', 'error');
-      return;
-    }
-
-    if (mode === 'register' && [...pass].length < 8) {
-      showToast('Para criar a conta, use uma senha com pelo menos 8 caracteres.', 'warning');
-      return;
-    }
+    const submitButton = document.getElementById('btnSubmitAuth');
 
     try {
+      setButtonLoading(submitButton, true, mode === 'register' ? 'Criando conta...' : 'Entrando...');
       const result = mode === 'register'
         ? await AuthService.register({ name: name || 'Estudante', email, password: pass })
         : await AuthService.login({ email, password: pass });
@@ -1020,12 +1139,16 @@ function initAccountScreen() {
 
       StorageService.saveAccount(userData);
       StorageService.saveSessionToken(result.token || StorageService.getSessionToken());
+      if (passwordInput) passwordInput.value = '';
       renderAccountScreen();
+      updateHeaderAccountChip();
       showToast(mode === 'register'
-        ? `Conta criada com sucesso! Bem-vindo(a), ${userData.name}.`
-        : `Login realizado com sucesso! Bem-vindo(a), ${userData.name}.`, 'success');
+        ? 'Conta criada! Você já está logado.'
+        : 'Login realizado com sucesso!', 'success');
     } catch (error) {
       showToast(error.message || 'Não foi possível autenticar no momento.', 'error');
+    } finally {
+      setButtonLoading(submitButton, false, mode === 'register' ? 'Criar minha conta gratuita' : 'Entrar na minha conta');
     }
   });
 
@@ -1033,17 +1156,49 @@ function initAccountScreen() {
     StorageService.clearSessionToken();
     StorageService.saveAccount({ isGuest: true, name: 'Estudante Visitante', email: '' });
     renderAccountScreen();
-    showToast('Você está utilizando o Tutor IA em modo visitante, sem cadastro.', 'info');
+    updateHeaderAccountChip();
+    showToast('Você está usando como visitante.', 'info');
   });
 
   document.getElementById('btnForgotPassword')?.addEventListener('click', () => {
-    const email = document.getElementById('inputAuthEmail')?.value.trim();
-    if (!email) {
-      showToast('Digite o seu e-mail para receber instruções de recuperação.', 'warning');
-    } else {
-      showToast(`Instruções de recuperação enviadas para ${email}.`, 'info', 4000);
+    showToast('Recuperação de senha em breve.', 'warning');
+  });
+
+  document.getElementById('btnLogout')?.addEventListener('click', async () => {
+    const token = StorageService.getSessionToken();
+    const logoutButton = document.getElementById('btnLogout');
+
+    if (!token) {
+      StorageService.saveAccount({ isGuest: true, name: 'Estudante Visitante', email: '' });
+      renderAccountScreen();
+      updateHeaderAccountChip();
+      return;
+    }
+
+    try {
+      setButtonLoading(logoutButton, true, 'Saindo...');
+      await AuthService.logout(token);
+      StorageService.clearSessionToken();
+      StorageService.saveAccount({ isGuest: true, name: 'Estudante Visitante', email: '' });
+      renderAccountScreen();
+      updateHeaderAccountChip();
+      showToast('Sessão encerrada com sucesso.', 'success');
+    } catch (error) {
+      showToast(error.message || 'Não foi possível encerrar a sessão.', 'error');
+    } finally {
+      setButtonLoading(logoutButton, false, 'Sair');
     }
   });
+
+  const btnHeaderAccount = document.getElementById('headerAccountChip');
+  btnHeaderAccount?.addEventListener('click', () => {
+    renderAccountScreen();
+    switchScreen('screenAccount');
+  });
+
+  applyAuthMode('login');
+  renderAccountScreen();
+  updateHeaderAccountChip();
 }
 
 // ==========================================================
@@ -1099,11 +1254,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           name: user.name,
           email: user.email
         });
+      } else {
+        StorageService.clearSessionToken();
+        StorageService.saveAccount({ isGuest: true, name: 'Estudante Visitante', email: '' });
+        showToast('Sua sessão expirou. Faça login novamente.', 'warning');
       }
     } catch (error) {
       console.warn('Sessão expirada ou indisponível:', error.message);
       StorageService.clearSessionToken();
       StorageService.saveAccount({ isGuest: true, name: 'Estudante Visitante', email: '' });
+      showToast('Sua sessão expirou. Faça login novamente.', 'warning');
     }
   }
 

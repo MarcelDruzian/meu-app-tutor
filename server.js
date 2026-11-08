@@ -685,6 +685,26 @@ async function handleRequest(req, res) {
     }
   }
 
+  if (req.method === 'POST' && pathname === '/api/auth/logout') {
+    try {
+      const authorization = req.headers.authorization || '';
+      const token = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+      if (!token) {
+        return sendJson(res, 401, { error: 'Sessão inválida ou expirada.' });
+      }
+
+      const session = await storage.findSession(token);
+      if (!session) {
+        return sendJson(res, 401, { error: 'Sessão inválida ou expirada.' });
+      }
+
+      await storage.deleteSession(token);
+      return sendJson(res, 200, { ok: true });
+    } catch (error) {
+      return sendRouteError(res, error, 'Erro ao encerrar sessão.');
+    }
+  }
+
   if (req.method === 'GET' && pathname === '/api/auth/me') {
     try {
       const user = await getAuthenticatedUser(req);

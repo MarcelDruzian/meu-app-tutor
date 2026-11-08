@@ -1,5 +1,5 @@
 // ==========================================================
-// TUTOR IA - CLIENTE DO SERVIÇO DO TUTOR (API & FALLBACK)
+// TUTOR IA - CLIENTE DO SERVI?O DO TUTOR (API & FALLBACK)
 // ==========================================================
 
 import { generateSmartDemoExplanation, generateDemoQuiz } from '../data/demoData.js';
@@ -9,13 +9,12 @@ function getTutorRequestHeaders() {
   const headers = { 'Content-Type': 'application/json' };
   const token = StorageService.getSessionToken();
   if (token) {
-    headers.Authorization = `Bearer ${token}`;
+    headers.Authorization = 'Bearer ' + token;
   }
   return headers;
 }
 
 export const TutorService = {
-  // Consultar status da API e se a IA real está ativa
   async getApiStatus() {
     try {
       const response = await fetch('/api/status');
@@ -23,7 +22,7 @@ export const TutorService = {
         return await response.json();
       }
     } catch (e) {
-      console.warn('Backend offline ou inacessível no momento.');
+      console.warn('Backend offline ou inacess?vel no momento.');
     }
     return {
       status: 'offline',
@@ -33,7 +32,6 @@ export const TutorService = {
     };
   },
 
-  // Solicitar explicação didática ao tutor
   async requestExplanation(params) {
     const { course, subject, topic, question, format } = params;
 
@@ -53,22 +51,20 @@ export const TutorService = {
         };
       }
     } catch (networkErr) {
-      console.warn('Backend indisponível ou aberto via arquivo local. Usando gerador didático integrado.', networkErr);
+      console.warn('Backend indispon?vel ou aberto via arquivo local. Usando gerador did?tico integrado.', networkErr);
     }
 
-    // Fallback didático 100% autônomo e confiável para modo offline ou sem servidor
     const localExplanation = generateSmartDemoExplanation(course, subject, topic, question, format);
     return {
       isDemo: true,
       meta: {
         isDemo: true,
-        notice: 'Modo Demonstração (Etapa 2): Exibindo conteúdo didático estruturado de contingência.'
+        notice: 'Modo Demonstra??o (Etapa 2): Exibindo conte?do did?tico estruturado de conting?ncia.'
       },
       explanation: localExplanation
     };
   },
 
-  // Solicitar questionário/simulado interativo
   async requestQuiz(params) {
     const { course, subject, topic, explanationContext = '' } = params;
 
@@ -94,10 +90,9 @@ export const TutorService = {
         };
       }
     } catch (networkErr) {
-      console.warn('Backend indisponível. Usando gerador de simulado local.', networkErr);
+      console.warn('Backend indispon?vel. Usando gerador de simulado local.', networkErr);
     }
 
-    // Fallback local contextualizado garantido e imediato.
     const localQuestions = generateDemoQuiz(course, subject, topic, explanationContext);
     return {
       isDemo: true,

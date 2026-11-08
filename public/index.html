@@ -57,6 +57,10 @@
           <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
           <span class="theme-toggle-text">Modo escuro</span>
         </button>
+        <button class="header-account-chip" id="headerAccountChip" type="button" aria-label="Abrir conta do usuário">
+          <span class="header-account-avatar" id="headerAccountAvatar">E</span>
+          <span id="headerAccountLabel">Entrar</span>
+        </button>
         <div class="demo-pill" id="headerStatusPill" title="Status da IA">
           <span class="pulse-dot" id="headerPulseDot"></span>
           <span id="headerStatusText">Etapa 2 · Demo</span>
@@ -150,7 +154,7 @@
         </div>
 
         <div class="guest-notice" style="margin-top: 16px;">
-          <span>🔓</span> Modo de teste gratuito — Nenhuma conta obrigatória para começar.
+          <span>🔓</span> Crie uma conta gratuita para pesquisar e salvar seu progresso.
         </div>
       </div>
     </section>
@@ -677,11 +681,11 @@
       </div>
 
       <!-- Cartão de Status do Usuário -->
-      <div class="account-status-card">
+      <div class="account-status-card" id="accountStatusCard">
         <div class="account-avatar" id="userAvatarIcon">🎓</div>
         <div class="account-status-info">
           <h3 id="userDisplayName">Estudante Visitante</h3>
-          <p id="userModeNotice">Modo de Teste Gratuito (Sem cadastro)</p>
+          <p id="userModeNotice">Você está usando como visitante</p>
         </div>
       </div>
 
@@ -695,31 +699,52 @@
         </button>
       </div>
 
+      <!-- Perfil autenticado -->
+      <div class="auth-profile-card" id="authProfileCard" hidden>
+        <div class="profile-head">
+          <div class="profile-avatar" id="profileAvatar">E</div>
+          <div class="profile-info">
+            <div class="profile-name" id="profileName">Estudante</div>
+            <div class="profile-email" id="profileEmail">email@exemplo.com</div>
+          </div>
+        </div>
+        <div class="profile-badge">✅ Você está logado</div>
+        <button type="button" class="btn btn-danger" id="btnLogout">
+          Sair
+        </button>
+      </div>
+
       <!-- Formulário de Autenticação Opcional -->
-      <div class="auth-form-container">
+      <div class="auth-form-container" id="authFormContainer">
         <form id="authForm" onsubmit="event.preventDefault();">
           <div class="form-group" id="groupNameRegister" style="display: none;">
             <label class="form-label" for="inputAuthName">Seu Nome</label>
-            <input type="text" id="inputAuthName" class="input-field" placeholder="Como quer ser chamado?">
+            <input type="text" id="inputAuthName" class="input-field" placeholder="Como quer ser chamado?" autocomplete="name" data-field="name">
+            <div class="field-error-msg" id="errAuthName">Informe seu nome completo.</div>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="inputAuthEmail">E-mail</label>
-            <input type="email" id="inputAuthEmail" class="input-field" placeholder="estudante@exemplo.com" required>
+            <input type="email" id="inputAuthEmail" class="input-field" placeholder="estudante@exemplo.com" autocomplete="email" data-field="email" required>
+            <div class="field-error-msg" id="errAuthEmail">Informe um e-mail válido.</div>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="inputAuthPassword">Senha</label>
-            <input type="password" id="inputAuthPassword" class="input-field" placeholder="Sua senha secreta" required>
+            <div class="password-input-wrap">
+              <input type="password" id="inputAuthPassword" class="input-field" placeholder="Sua senha secreta" autocomplete="current-password" data-field="password" required>
+              <button type="button" class="password-toggle" id="btnTogglePassword" aria-label="Mostrar senha">Mostrar</button>
+            </div>
+            <div class="field-error-msg" id="errAuthPassword">Use uma senha com pelo menos 8 caracteres.</div>
           </div>
 
           <div style="margin-bottom: 16px; text-align: right;" id="boxForgotPassword">
-            <button type="button" class="btn-text" id="btnForgotPassword" style="padding: 0; font-size: 12px;">
+            <button type="button" class="btn btn-ghost btn-small" id="btnForgotPassword" aria-label="Recuperar senha">
               Esqueci minha senha
             </button>
           </div>
 
-          <button type="submit" class="btn btn-primary" id="btnSubmitAuth">
+          <button type="submit" class="btn btn-primary" id="btnSubmitAuth" aria-busy="false">
             Entrar na minha conta
           </button>
         </form>
@@ -729,7 +754,7 @@
             Prefere não criar conta agora?
           </p>
           <button class="btn btn-secondary" id="btnContinueAsGuest">
-            Continuar em Modo Visitante
+            Continuar como visitante
           </button>
         </div>
       </div>

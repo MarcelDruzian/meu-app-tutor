@@ -13,7 +13,6 @@ const KEYS = {
 const isStorageAvailable = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined';
 
 export const StorageService = {
-  // Salvar novo estudo no histórico
   saveStudySession(sessionData) {
     if (!isStorageAvailable()) return null;
     try {
@@ -29,7 +28,6 @@ export const StorageService = {
         summary: sessionData.summary || ''
       };
 
-      // Adiciona no início e mantém os 50 mais recentes
       history.unshift(newItem);
       if (history.length > 50) history.pop();
 
@@ -48,7 +46,7 @@ export const StorageService = {
     try {
       const response = await fetch('/api/history', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify({
           type: 'explanation',
           course: sessionData.course,
@@ -62,7 +60,7 @@ export const StorageService = {
       const result = await response.json().catch(() => ({}));
       return result.history || null;
     } catch (error) {
-      console.warn('Erro ao sincronizar histórico remoto:', error);
+      console.warn('Erro ao sincronizar hist?rico remoto:', error);
       return null;
     }
   },
@@ -73,13 +71,13 @@ export const StorageService = {
     try {
       const response = await fetch('/api/history', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify({
           type: 'quiz',
           course: resultData.course,
           subject: resultData.subject,
           topic: resultData.topic,
-          summary: `Quiz concluído: ${resultData.score} de ${resultData.total} acertos`
+          summary: 'Quiz conclu?do: ' + resultData.score + ' de ' + resultData.total + ' acertos'
         })
       });
       if (!response.ok) return null;
@@ -91,7 +89,6 @@ export const StorageService = {
     }
   },
 
-  // Obter histórico de estudos
   getHistory() {
     if (!isStorageAvailable()) return [];
     try {
@@ -102,7 +99,6 @@ export const StorageService = {
     }
   },
 
-  // Limpar histórico
   clearHistory() {
     if (!isStorageAvailable()) return true;
     try {
@@ -113,7 +109,6 @@ export const StorageService = {
     }
   },
 
-  // Salvar resultado de questionário
   saveQuizResult(resultData) {
     if (!isStorageAvailable()) return null;
     try {
@@ -134,7 +129,7 @@ export const StorageService = {
       localStorage.setItem(KEYS.QUIZZES, JSON.stringify(quizzes));
       return newQuiz;
     } catch (e) {
-      console.warn('Erro ao salvar questionário:', e);
+      console.warn('Erro ao salvar question?rio:', e);
       return null;
     }
   },
@@ -145,7 +140,7 @@ export const StorageService = {
     try {
       const response = await fetch('/api/progress', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify({
           course: progressData.course,
           subject: progressData.subject,
@@ -164,7 +159,6 @@ export const StorageService = {
     }
   },
 
-  // Obter histórico de questionários
   getQuizzes() {
     if (!isStorageAvailable()) return [];
     try {
@@ -175,7 +169,6 @@ export const StorageService = {
     }
   },
 
-  // Metas diárias e acompanhamento
   getGoals() {
     if (!isStorageAvailable()) return { dailyTarget: 3, completedToday: 0, lastDate: '', streak: 1 };
     try {
@@ -183,7 +176,6 @@ export const StorageService = {
       const today = new Date().toISOString().slice(0, 10);
       let goals = raw ? JSON.parse(raw) : { dailyTarget: 3, completedToday: 0, lastDate: today, streak: 1 };
 
-      // Se mudou o dia, reseta a meta diária e atualiza a sequência
       if (goals.lastDate !== today) {
         goals.completedToday = 0;
         goals.lastDate = today;
@@ -206,7 +198,6 @@ export const StorageService = {
     }
   },
 
-  // Dados do usuário / modo teste
   getAccount() {
     if (!isStorageAvailable()) return { isGuest: true, name: 'Estudante Visitante', email: '' };
     try {

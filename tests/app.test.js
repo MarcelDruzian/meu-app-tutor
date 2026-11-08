@@ -257,6 +257,22 @@ describe('autenticação', () => {
     assert.equal(wrongPassword.data.error, unknownEmail.data.error, 'a mensagem não pode revelar se o e-mail existe');
   });
 
+  test('logout invalida a sessão e remove o token do armazenamento', async () => {
+    const s = await startServer();
+    const register = await s.json('POST', '/api/auth/register', { name: 'Diana', email: 'diana@exemplo.com', password: 'senha-forte-9' });
+    const token = register.data.token;
+
+    const invalid = await s.json('POST', '/api/auth/logout', undefined, { Authorization: 'Bearer token-invalido' });
+    assert.equal(invalid.status, 401);
+
+    const valid = await s.json('POST', '/api/auth/logout', undefined, { Authorization: `Bearer ${token}` });
+    assert.equal(valid.status, 200);
+    assert.deepEqual(valid.data, { ok: true });
+
+    const meAfterLogout = await s.json('GET', '/api/auth/me', undefined, { Authorization: `Bearer ${token}` });
+    assert.equal(meAfterLogout.status, 401);
+  });
+
   test('progresso e histórico do usuário são persistidos e consultados por sessão', async () => {
     const s = await startServer();
     const register = await s.json('POST', '/api/auth/register', { name: 'Clara', email: 'clara@exemplo.com', password: 'senha-forte-3' });
