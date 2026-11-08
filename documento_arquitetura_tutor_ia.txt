@@ -1,0 +1,228 @@
+TUTOR IA - DOCUMENTO EXPLICATIVO PARA LEIGO
+
+Este documento explica, de forma simples, como a aplicação funciona, quais tecnologias ela usa e como a inteligência artificial se conecta ao sistema.
+
+1) O que é este projeto?
+
+Este projeto é uma aplicação web que ajuda estudantes a aprender melhor. Ela permite:
+- pesquisar assuntos de estudo;
+- receber explicações em linguagem simples;
+- gerar exercícios e quizzes;
+- acompanhar progresso e histórico;
+- criar conta e salvar dados.
+
+Em resumo, a ideia é transformar o estudo em um processo mais guiado, didático e personalizado.
+
+2) Quais linguagens e tecnologias são usadas?
+
+A aplicação foi desenvolvida principalmente com:
+
+- JavaScript
+  - Linguagem principal da aplicação.
+  - É usada no frontend (parte que aparece no navegador) e no backend (parte que roda no servidor).
+  - O Node.js é o ambiente que executa JavaScript no servidor.
+
+- HTML
+  - Define a estrutura das páginas.
+  - Exemplo: botão, formulário, cards, abas, menus e textos.
+
+- CSS
+  - Define a aparência visual.
+  - Responsável por cores, fontes, espaçamento, tamanhos, sombras, bordas e layout.
+
+- JSON
+  - Estrutura de dados simples e leve.
+  - Usado para salvar usuários, sessões, progresso e histórico.
+
+- .env
+  - Arquivo de configuração.
+  - Guarda chaves de acesso, portas e configurações sensíveis sem expor em código.
+
+- Node.js
+  - Ambiente de execução do servidor.
+  - Permite criar APIs e serviços web.
+
+3) Como a arquitetura funciona?
+
+A aplicação tem uma arquitetura simples, dividida em partes:
+
+A) Frontend
+- É a parte que o usuário vê no navegador.
+- Inclui as telas de estudo, conta, histórico e exercícios.
+- Clica em botões, digita assuntos e recebe respostas.
+- A interface é construída em HTML, CSS e JavaScript.
+
+B) Backend
+- É a parte que roda no servidor.
+- É responsável por receber as requisições do frontend.
+- Processa login, cadastro, pesquisar explicações, gerar quiz e salvar histórico.
+
+C) Banco/Armazenamento
+- Os dados ficam guardados em arquivos locais em formato JSON.
+- Isso permite salvar:
+  - usuários;
+  - sessões autenticadas;
+  - progresso;
+  - histórico de estudos.
+
+D) API de Inteligência Artificial
+- A aplicação conversa com provedores de IA, como Google Gemini e OpenAI.
+- Esses serviços geram explicações e exercícios com base no tema pedido pelo usuário.
+- A IA recebe instruções e o assunto do estudo para responder em linguagem didática.
+
+4) Como a IA entra na aplicação?
+
+A IA funciona como um “assistente inteligente” dentro do sistema.
+
+Exemplo de fluxo:
+- O usuário digita um assunto: “Equações do segundo grau”.
+- O frontend envia esse tema para o servidor.
+- O backend cria uma mensagem com instruções de ensino.
+- Essa mensagem é enviada para a IA.
+- A IA responde com uma explicação estruturada, exemplos e perguntas de revisão.
+
+Essas respostas podem ser:
+- explicação didática;
+- resumo em tópicos;
+- exemplos práticos;
+- quiz com perguntas e respostas.
+
+5) O que acontece quando a IA falha?
+
+A aplicação foi pensada para continuar funcionando mesmo sem IA ativa ou com falha temporária.
+
+Existem dois modos:
+
+- Modo com IA real
+  - Quando a chave da API está funcionando.
+  - A resposta vem do provedor de IA.
+
+- Modo de fallback
+  - Quando a IA não está disponível, a chave não está configurada ou houve erro.
+  - O sistema usa conteúdo local e estruturado para manter a experiência funcionando.
+
+Isso é importante porque a aplicação não quebra quando a conexão com a IA falha.
+
+6) O que é autenticação?
+
+Autenticação significa identificar quem está usando a aplicação.
+
+A aplicação permite:
+- Cadastro de usuário
+- Login
+- Sessão ativa
+- Logout
+
+Quando o usuário faz login, o sistema cria uma sessão para manter o acesso. Isso permite guardar progresso e histórico específico daquele usuário.
+
+7) O que é um visitante?
+
+Visitante é um usuário que entra na aplicação sem fazer login.
+
+Ele pode:
+- navegar;
+- estudar;
+- ver explicações;
+- responder exercícios.
+
+Mas, em regra de produto, o visitante não tem acesso às funções mais avançadas de salvar progresso e consultar histórico de conta.
+
+A conta autenticada é a opção que oferece:
+- salvar progresso;
+- acompanhar evolução;
+- manter dados pessoais no sistema.
+
+8) Como funciona o histórico e o progresso?
+
+A aplicação registra:
+- quais temas foram pesquisados;
+- quantos quizzes foram feitos;
+- quantas respostas corretas;
+- quanto o usuário estudou.
+
+Com isso, o usuário consegue acompanhar sua evolução ao longo do tempo.
+
+9) Como funciona o questionário?
+
+O questionário é gerado a partir do assunto estudado. Ele pode ser:
+- genérico;
+- contextualizado pelo tema pesquisado;
+- relacionado à explicação recebida.
+
+O objetivo é revisar o conteúdo e fixar o aprendizado.
+
+10) Quais são os pontos principais da arquitetura?
+
+A aplicação tem os seguintes blocos principais:
+
+- Frontend web
+  - telas e interação do usuário
+
+- Servidor HTTP
+  - recebe e processa requisições
+
+- Rotas da API
+  - explicação
+  - quiz
+  - login
+  - cadastro
+  - logout
+  - histórico
+  - progresso
+
+- Sistema de autenticação
+  - login/logout
+  - sessões
+  - tokens
+
+- Storage
+  - guarda usuários, dados e sessões
+
+- Provedores de IA
+  - Google Gemini e/ou OpenAI
+
+- Sistema de segurança
+  - validação de entrada
+  - limites de requisição
+  - proteção contra abuso
+
+11) Por que ela é considerada modular?
+
+Porque cada parte tem uma responsabilidade clara:
+- o frontend cuida da interface;
+- o backend cuida do processamento;
+- o armazenamento cuida dos dados;
+- a IA cuida da geração inteligente do conteúdo;
+- a autenticação cuida da identidade do usuário.
+
+Isso facilita manutenção, correção de bugs e evolução do sistema.
+
+12) Em linguagem simples:
+
+Pense na aplicação assim:
+
+- O usuário escreve um tema de estudo.
+- A interface envia essa informação para o servidor.
+- O servidor organiza tudo e chama a IA quando necessário.
+- A IA gera explicação e questionários.
+- Os dados são salvos para acompanhar o progresso.
+- Se a IA falha, a app usa uma resposta local para continuar funcionando.
+
+13) Resumo final
+
+A aplicação é uma plataforma de estudo inteligente que combina:
+- interface web moderna;
+- backend em JavaScript/Node.js;
+- HTML e CSS para experiência visual;
+- armazenamento em JSON;
+- autenticação de usuários;
+- integração com IA para gerar explicações e quizzes;
+- fallback local para garantir a continuidade do sistema.
+
+Em outras palavras, ela é uma espécie de tutor digital que ajuda o estudante a aprender de forma mais guiada, estruturada e personalizada.
+
+14) Conclusão
+
+Este projeto mistura tecnologia, educação e inteligência artificial em uma solução prática para estudo pessoal. A ideia principal é deixar o aprendizado mais simples, mais rápido e mais organizado, sem perder a estabilidade do sistema quando a IA não está disponível.
+
+Fim do documento.
