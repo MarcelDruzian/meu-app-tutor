@@ -10,6 +10,33 @@ export function normalizeStr(str = '') {
     .trim();
 }
 
+function extractContextSignals(explanationContext = '') {
+  const rawText = String(explanationContext || '')
+    .replace(/[#*_`>]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const sentences = rawText
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map(part => part.trim())
+    .filter(part => part.length > 18)
+    .slice(0, 5);
+
+  const keywords = rawText
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9À-ÖØ-öø-ÿ\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 4)
+    .filter(word => !['sobre', 'quando', 'porque', 'desta', 'conteudo', 'assunto', 'tema', 'muito', 'alguns', 'apenas', 'forma', 'inicio', 'gracias', 'pontos', 'parte', 'entao', 'sendo', 'ainda', 'tudo', 'mais', 'muitas', 'entre', 'diante'].includes(word))
+    .filter((word, index, list) => list.indexOf(word) === index)
+    .slice(0, 4);
+
+  return {
+    anchor: sentences[0] ? sentences[0].slice(0, 180) : rawText.slice(0, 180),
+    keywords
+  };
+}
+
 export const DEMO_PRESETS = [
   // --------------------------------------------------------
   // 1. HISTÓRIA: DESCOBERTA / CHEGADA DOS PORTUGUESES AO BRASIL
@@ -588,6 +615,115 @@ export function generateDemoQuiz(course, subject, topic, explanationContext = nu
   const preset = findMatchingPreset(topic, subject);
   if (preset && preset.quiz && preset.quiz.length > 0) {
     return JSON.parse(JSON.stringify(preset.quiz));
+  }
+
+  if (typeof explanationContext === 'string' && explanationContext.trim().length > 20) {
+    const normalised = explanationContext
+      .replace(/[#*_`>]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const candidates = normalised
+      .split(/(?<=[.!?])\s+|\n+/)
+      .map(part => part.trim())
+      .filter(part => part.length > 18)
+      .slice(0, 3);
+
+    const anchor = candidates[0] ? candidates[0].slice(0, 170) : normalised.slice(0, 170);
+    const cue = candidates[1] || candidates[0] || normalised.slice(0, 120);
+    const cueText = cue.replace(/\s+/g, ' ').trim();
+
+    return [
+      {
+        id: 1,
+        statement: `Com base no trecho apresentado sobre "${topic}", qual ideia foi destacada como foco principal do conteúdo?`,
+        options: [
+          {
+            id: 'A',
+            text: `A explicação destacou o tema principal de ${topic} e sua relação direta com o contexto descrito em "${cueText}".`,
+            isCorrect: true,
+            feedback: `Correto! O ponto central do texto foi conectar ${topic} ao contexto e ao raciocínio que foi explicado.`
+          },
+          {
+            id: 'B',
+            text: 'A ideia principal era ignorar o que foi lido e apenas memorizar frases sem refletir sobre o tema.',
+            isCorrect: false,
+            feedback: 'Incorreto. O objetivo do estudo é perceber a lógica do conteúdo, não apenas repetir frases isoladas.'
+          },
+          {
+            id: 'C',
+            text: 'O tema principal era totalmente independente do que foi escrito na explicação.',
+            isCorrect: false,
+            feedback: 'Incorreto. O texto e o tema estudado devem estar ligados para que a aprendizagem seja útil e compreensível.'
+          },
+          {
+            id: 'D',
+            text: 'O conteúdo do texto não precisa ser relacionado ao assunto pesquisado.',
+            isCorrect: false,
+            feedback: 'Incorreto. A compreensão do tema é construída a partir do que foi lido e do raciocínio sobre ele.'
+          }
+        ]
+      },
+      {
+        id: 2,
+        statement: `Ao revisar o trecho sobre "${topic}" (${anchor}), qual é a melhor forma de confirmar que você compreendeu o material?`,
+        options: [
+          {
+            id: 'A',
+            text: 'Explicar os pontos principais com suas próprias palavras e relacionar o tema ao contexto apresentado.',
+            isCorrect: true,
+            feedback: 'Correto! Quando você consegue resumir com suas próprias palavras, evidencia que a leitura foi compreendida.'
+          },
+          {
+            id: 'B',
+            text: 'Repetir exatamente as frases sem tentar entender o sentido.',
+            isCorrect: false,
+            feedback: 'Incorreto. Repetição mecânica não garante compreensão ou retenção real do conceito.'
+          },
+          {
+            id: 'C',
+            text: 'Ignorar o texto e buscar qualquer resposta fora do tema estudado.',
+            isCorrect: false,
+            feedback: 'Incorreto. O melhor ponto de partida é o conteúdo que foi apresentado, não um assunto aleatório.'
+          },
+          {
+            id: 'D',
+            text: 'Aceitar qualquer informação sem verificar se ela conecta com o tema principal.',
+            isCorrect: false,
+            feedback: 'Incorreto. A reflexão crítica é essencial para entender o conteúdo de forma sólida.'
+          }
+        ]
+      },
+      {
+        id: 3,
+        statement: `Como a ideia presente em "${topic}" pode ser aplicada de maneira útil no seu estudo em ${subject}?`,
+        options: [
+          {
+            id: 'A',
+            text: `Relacionando o tema ao conteúdo do texto e usando essa lógica para pensar, responder e praticar o assunto de forma consciente.`,
+            isCorrect: true,
+            feedback: 'Correto! A aplicação do conhecimento ao contexto e à prática é o que fortalece o aprendizado.'
+          },
+          {
+            id: 'B',
+            text: 'Esquecendo o tema após a leitura e sem revisitar a ideia principal.',
+            isCorrect: false,
+            feedback: 'Incorreto. Revisões e aplicação são fundamentais para consolidar o conteúdo na memória.'
+          },
+          {
+            id: 'C',
+            text: 'Separando o texto da ideia principal para evitar confusão.',
+            isCorrect: false,
+            feedback: 'Incorreto. A relação entre o tema e o que foi explicado ajuda na compreensão e na retenção.'
+          },
+          {
+            id: 'D',
+            text: 'Considerando apenas a aparência do texto sem analisar os conceitos.',
+            isCorrect: false,
+            feedback: 'Incorreto. O sentido do texto é mais importante do que a aparência superficial.'
+          }
+        ]
+      }
+    ];
   }
 
   const domain = detectSubjectDomain(subject, topic);

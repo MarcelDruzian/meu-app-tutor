@@ -13,6 +13,7 @@ import path from 'node:path';
 import http from 'node:http';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { generateDemoQuiz } from '../public/js/data/demoData.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cleanups = [];
@@ -160,6 +161,16 @@ describe('servidor básico', () => {
     assert.equal(head.status, 200);
     const post = await fetch(s.base + '/index.html', { method: 'POST' });
     assert.equal(post.status, 405);
+  });
+
+  test('fallback contextualiza o quiz a partir do texto da explicação', async () => {
+    const context = 'Brasileirão 2026: a competição destaca clubes, calendário, disputa de pontos e a importância do planejamento de cada clube para a temporada.';
+    const questions = generateDemoQuiz('Educação Física', 'História do Esporte', 'Brasileirão 2026', context);
+
+    assert.equal(questions.length, 3);
+    const joined = questions.map(q => q.statement).join(' ');
+    assert.match(joined.toLowerCase(), /brasileirao 2026|brasileirão 2026/);
+    assert.match(joined.toLowerCase(), /clube|calendario|pontos|texto/);
   });
 
   test('URL malformada ou com tentativa de path traversal não derruba nem vaza arquivos', async () => {
