@@ -943,6 +943,19 @@ async function renderHistoryScreen() {
 // ==========================================================
 // TELA 7: CONTA DO ESTUDANTE
 // ==========================================================
+function getDisplayName(account, fallback = 'Conta') {
+  const rawName = String(account?.name || '').trim();
+  if (rawName) return rawName.split(/\s+/).filter(Boolean)[0];
+
+  const email = String(account?.email || '').trim();
+  if (email) {
+    const localPart = email.split('@')[0]?.trim();
+    if (localPart) return localPart;
+  }
+
+  return fallback;
+}
+
 function getInitials(name, fallback = 'E') {
   const text = String(name || fallback).trim();
   if (!text) return fallback.slice(0, 1).toUpperCase();
@@ -961,11 +974,12 @@ function updateHeaderAccountChip() {
   if (!chip || !label || !avatar) return;
 
   if (isLoggedIn) {
-    const initials = getInitials(account.name || account.email, 'E');
+    const displayName = getDisplayName(account, 'Conta');
+    const initials = getInitials(account.name || displayName, 'E');
     chip.classList.add('is-authenticated');
     avatar.textContent = initials;
-    label.textContent = (account.name || account.email || 'Conta').split(' ')[0];
-    chip.setAttribute('aria-label', `Abrir conta de ${account.name || account.email || 'usuário'}`);
+    label.textContent = displayName;
+    chip.setAttribute('aria-label', `Abrir conta de ${displayName}`);
   } else {
     chip.classList.remove('is-authenticated');
     avatar.textContent = 'E';
