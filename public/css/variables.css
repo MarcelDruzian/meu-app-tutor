@@ -5,49 +5,51 @@
 
 :root {
   /* Cores principais */
-  --color-primary: #8ab4ff;
-  --color-primary-hover: #b7d0ff;
-  --color-primary-light: rgba(138, 180, 255, 0.14);
-  --color-primary-border: #5679c8;
-  --color-primary-glow: rgba(138, 180, 255, 0.18);
+  --color-primary: #8fb4ff;
+  --color-primary-hover: #bed5ff;
+  --color-primary-light: rgba(143, 180, 255, 0.14);
+  --color-primary-border: #6b8fe8;
+  --color-primary-glow: rgba(143, 180, 255, 0.2);
 
-  --color-accent: #ffb15b;
-  --color-accent-shadow: #d77822;
-  --color-accent-light: rgba(255, 177, 91, 0.12);
-  --color-marker: #f4d85d;
+  --color-accent: #ffb76c;
+  --color-accent-shadow: #d77e2a;
+  --color-accent-light: rgba(255, 183, 108, 0.14);
+  --color-marker: #f4d76b;
 
-  --color-success: #58d49d;
-  --color-success-light: rgba(40, 181, 110, 0.18);
-  --color-success-text: #dbf7e7;
-  --color-warning: #ffce60;
-  --color-warning-light: rgba(255, 206, 96, 0.12);
-  --color-danger: #ff7a7a;
-  --color-danger-light: rgba(255, 122, 122, 0.14);
-  --color-danger-text: #ffd9d9;
-  --color-info-light: rgba(121, 144, 255, 0.12);
-  --color-warm-light: rgba(255, 177, 91, 0.12);
-  --color-warm-border: rgba(255, 177, 91, 0.4);
-  --color-warning-border: rgba(247, 214, 125, 0.55);
-  --color-success-border: rgba(143, 224, 181, 0.35);
-  --color-danger-border: rgba(247, 178, 182, 0.4);
-  --color-overlay-soft: rgba(15, 23, 42, 0.28);
+  --color-success: #65d9a2;
+  --color-success-light: rgba(101, 217, 162, 0.18);
+  --color-success-text: #dffbf0;
+  --color-warning: #ffc857;
+  --color-warning-light: rgba(255, 200, 87, 0.14);
+  --color-danger: #ff7f8c;
+  --color-danger-light: rgba(255, 127, 140, 0.15);
+  --color-danger-text: #ffe5e8;
+  --color-info-light: rgba(140, 162, 255, 0.12);
+  --color-warm-light: rgba(255, 183, 108, 0.12);
+  --color-warm-border: rgba(255, 183, 108, 0.38);
+  --color-warning-border: rgba(255, 208, 98, 0.5);
+  --color-success-border: rgba(132, 218, 177, 0.38);
+  --color-danger-border: rgba(255, 164, 175, 0.42);
+  --color-overlay-soft: rgba(14, 21, 34, 0.28);
 
   /* Superfícies */
   --bg-page: #071827;
   --bg-card: #10243a;
-  --bg-card-subtle: #132d48;
-  --bg-input: #0f1d2d;
+  --bg-card-subtle: #152c49;
+  --bg-input: #0d1c2d;
   --border-color: #2d446a;
-  --border-soft: #33507e;
-  --border-color-focus: #8ab4ff;
+  --border-soft: #395988;
+  --border-color-focus: #8fb4ff;
 
   /* Textos */
   --text-main: #edf4ff;
-  --text-secondary: #d2dcec;
-  --text-muted: #b4c2e0;
+  --text-secondary: #d4dff6;
+  --text-muted: #b2c2e4;
   --text-inverse: #08111d;
-  --text-on-accent: #0f172a;
+  --text-on-accent: #0d172b;
 
+  --btn-primary-bg: linear-gradient(135deg, #5f8dff, #4071f5 45%, #234ec4);
+  --btn-primary-bg-hover: linear-gradient(135deg, #507ef5, #315fe0 45%, #1d42b0);
   --btn-secondary-bg: linear-gradient(180deg, rgba(26, 42, 73, 0.9), rgba(21, 32, 58, 0.96));
   --btn-secondary-text: #edf4ff;
   --btn-secondary-border: rgba(150, 175, 255, 0.24);
@@ -56,6 +58,8 @@
   --btn-neutral-bg: rgba(17, 27, 48, 0.9);
   --btn-neutral-text: #edf4ff;
   --btn-neutral-hover: rgba(23, 36, 62, 0.98);
+  --btn-danger-bg: linear-gradient(135deg, #ff7a7a, #df4f5f 52%, #b52a3d);
+  --btn-danger-bg-hover: linear-gradient(135deg, #ff6e6e, #d84456 52%, #9d1d2d);
 
   /* Tipografia */
   --font-family-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -105,45 +109,47 @@
 :root[data-theme='light'] {
   --color-primary: #2459F0;
   --color-primary-hover: #1B47C9;
-  --color-primary-light: #EEF3FF;
-  --color-primary-border: #C3D3FF;
+  --color-primary-light: #EDF3FF;
+  --color-primary-border: #C7D7FF;
   --color-primary-glow: rgba(36, 89, 240, 0.18);
 
   --color-accent: #FF8A1F;
   --color-accent-shadow: #D96D00;
-  --color-accent-light: #FFF3E4;
-  --color-marker: #FFE866;
+  --color-accent-light: #FFF3E7;
+  --color-marker: #F8E36C;
 
   --color-success: #12A56B;
-  --color-success-light: #DDF6E8;
-  --color-success-text: #0B5A3A;
+  --color-success-light: #E2F8EE;
+  --color-success-text: #0A5C3C;
   --color-warning: #F59E0B;
-  --color-warning-light: #FFF7E6;
+  --color-warning-light: #FFF5E0;
   --color-danger: #E5383B;
-  --color-danger-light: #FFE3E5;
+  --color-danger-light: #FFE7EA;
   --color-danger-text: #7A1020;
-  --color-info-light: #EAF0FF;
-  --color-warm-light: #FFF3E4;
-  --color-warm-border: #FFC27A;
-  --color-warning-border: #F7D67D;
-  --color-success-border: #8FE0B5;
-  --color-danger-border: #F7B2B6;
-  --color-overlay-soft: rgba(255, 255, 255, 0.22);
+  --color-info-light: #EDF2FF;
+  --color-warm-light: #FFF3E7;
+  --color-warm-border: #FFCB8A;
+  --color-warning-border: #F7DB8D;
+  --color-success-border: #9ADAAB;
+  --color-danger-border: #F7B7BF;
+  --color-overlay-soft: rgba(255, 255, 255, 0.24);
 
   --bg-page: #F5F3FF;
   --bg-card: #FFFFFF;
-  --bg-card-subtle: #F5F7FF;
+  --bg-card-subtle: #F8F9FF;
   --bg-input: #FFFFFF;
-  --border-color: #D5DEF7;
-  --border-soft: #DCE5FB;
+  --border-color: #D6DEFA;
+  --border-soft: #E1E9FF;
   --border-color-focus: #2459F0;
 
   --text-main: #12224D;
-  --text-secondary: #4A5880;
-  --text-muted: #5F6C96;
+  --text-secondary: #4D5C82;
+  --text-muted: #6879A3;
   --text-inverse: #FFFFFF;
   --text-on-accent: #12224D;
 
+  --btn-primary-bg: linear-gradient(135deg, #2459F0, #1d49d7 45%, #1538ab);
+  --btn-primary-bg-hover: linear-gradient(135deg, #1f51ea, #183dc8 45%, #12309c);
   --btn-secondary-bg: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(239,243,255,0.96));
   --btn-secondary-text: #12224D;
   --btn-secondary-border: rgba(116, 131, 201, 0.26);
@@ -152,6 +158,8 @@
   --btn-neutral-bg: rgba(255, 255, 255, 0.96);
   --btn-neutral-text: #12224D;
   --btn-neutral-hover: rgba(255, 255, 255, 1);
+  --btn-danger-bg: linear-gradient(135deg, #e5383b, #c92a38 52%, #a81c2d);
+  --btn-danger-bg-hover: linear-gradient(135deg, #df2d35, #b92732 52%, #8e1221);
 
   --shadow-sm: 0 1px 3px rgba(18, 34, 77, 0.06), 0 1px 2px rgba(18, 34, 77, 0.04);
   --shadow-md: 0 10px 20px -12px rgba(36, 89, 240, 0.22), 0 6px 14px -14px rgba(18, 34, 77, 0.12);
