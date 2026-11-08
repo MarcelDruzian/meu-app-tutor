@@ -84,7 +84,7 @@ function applyTheme(theme) {
 
 function initThemeToggle() {
   const savedTheme = localStorage.getItem('tutor-theme');
-  const preferredTheme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : 'light';
+  const preferredTheme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : 'dark';
   applyTheme(preferredTheme);
 
   document.getElementById('themeToggleBtn')?.addEventListener('click', () => {
@@ -994,7 +994,9 @@ function renderAccountScreen() {
   const noticeEl = document.getElementById('userModeNotice');
   const avatarEl = document.getElementById('userAvatarIcon');
   const profileCard = document.getElementById('authProfileCard');
+  const guestCard = document.getElementById('guestAccountCard');
   const authFormContainer = document.getElementById('authFormContainer');
+  const tabs = document.getElementById('accountTabs');
   const profileName = document.getElementById('profileName');
   const profileEmail = document.getElementById('profileEmail');
   const profileAvatar = document.getElementById('profileAvatar');
@@ -1008,7 +1010,9 @@ function renderAccountScreen() {
     noticeEl.textContent = 'Você está usando como visitante';
     avatarEl.textContent = '🎓';
     if (profileCard) profileCard.hidden = true;
-    if (authFormContainer) authFormContainer.style.display = 'block';
+    if (guestCard) guestCard.hidden = false;
+    if (authFormContainer) authFormContainer.style.display = 'none';
+    if (tabs) tabs.style.display = 'none';
     return;
   }
 
@@ -1016,8 +1020,10 @@ function renderAccountScreen() {
   noticeEl.textContent = 'Você está logado';
   avatarEl.textContent = getInitials(account.name || account.email, 'E');
 
+  if (guestCard) guestCard.hidden = true;
   if (profileCard) profileCard.hidden = false;
   if (authFormContainer) authFormContainer.style.display = 'none';
+  if (tabs) tabs.style.display = 'none';
   if (profileName) profileName.textContent = account.name || 'Estudante autenticado';
   if (profileEmail) profileEmail.textContent = account.email || 'sem e-mail cadastrado';
   if (profileAvatar) profileAvatar.textContent = getInitials(account.name || account.email, 'E');
@@ -1097,6 +1103,8 @@ function initAccountScreen() {
   const btnSubmit = document.getElementById('btnSubmitAuth');
   const togglePassword = document.getElementById('btnTogglePassword');
   const passwordInput = document.getElementById('inputAuthPassword');
+  const guestCard = document.getElementById('guestAccountCard');
+  const authFormContainer = document.getElementById('authFormContainer');
 
   let mode = 'login';
 
@@ -1109,6 +1117,10 @@ function initAccountScreen() {
     tabRegister?.setAttribute('aria-selected', String(isRegister));
     if (groupName) groupName.style.display = isRegister ? 'block' : 'none';
     if (boxForgot) boxForgot.style.display = isRegister ? 'none' : 'block';
+    if (guestCard) guestCard.hidden = true;
+    if (authFormContainer) authFormContainer.style.display = 'block';
+    const tabs = document.getElementById('accountTabs');
+    if (tabs) tabs.style.display = 'flex';
     if (btnSubmit) {
       btnSubmit.textContent = isRegister ? 'Criar minha conta gratuita' : 'Entrar na minha conta';
       btnSubmit.dataset.defaultLabel = btnSubmit.textContent;
@@ -1117,6 +1129,12 @@ function initAccountScreen() {
 
   tabLogin?.addEventListener('click', () => applyAuthMode('login'));
   tabRegister?.addEventListener('click', () => applyAuthMode('register'));
+  document.getElementById('btnGuestLogin')?.addEventListener('click', () => {
+    applyAuthMode('login');
+  });
+  document.getElementById('btnGuestRegister')?.addEventListener('click', () => {
+    applyAuthMode('register');
+  });
 
   togglePassword?.addEventListener('click', () => {
     const showing = passwordInput?.type === 'text';
@@ -1164,14 +1182,6 @@ function initAccountScreen() {
     } finally {
       setButtonLoading(submitButton, false, mode === 'register' ? 'Criar minha conta gratuita' : 'Entrar na minha conta');
     }
-  });
-
-  document.getElementById('btnContinueAsGuest')?.addEventListener('click', () => {
-    StorageService.clearSessionToken();
-    StorageService.saveAccount({ isGuest: true, name: 'Estudante Visitante', email: '' });
-    renderAccountScreen();
-    updateHeaderAccountChip();
-    showToast('Você está usando como visitante.', 'info');
   });
 
   document.getElementById('btnForgotPassword')?.addEventListener('click', () => {

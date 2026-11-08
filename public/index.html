@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="light">
+<html lang="pt-BR" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -690,13 +690,28 @@
       </div>
 
       <!-- Abas Entrar / Criar Conta -->
-      <div class="account-tabs" role="tablist">
+      <div class="account-tabs" id="accountTabs" role="tablist">
         <button class="account-tab-btn active" id="tabBtnLogin" role="tab" aria-selected="true">
           Entrar
         </button>
         <button class="account-tab-btn" id="tabBtnRegister" role="tab" aria-selected="false">
           Criar Conta
         </button>
+      </div>
+
+      <!-- Visitante -->
+      <div class="auth-profile-card" id="guestAccountCard" hidden>
+        <div class="profile-head">
+          <div class="profile-avatar" id="guestAccountAvatar">🎓</div>
+          <div class="profile-info">
+            <div class="profile-name" id="guestAccountTitle">Você está usando como visitante</div>
+            <div class="profile-email" id="guestAccountHint">Crie uma conta gratuita para pesquisar e salvar seu progresso.</div>
+          </div>
+        </div>
+        <div class="guest-account-actions">
+          <button type="button" class="btn btn-primary" id="btnGuestLogin">Entrar</button>
+          <button type="button" class="btn btn-secondary" id="btnGuestRegister">Criar conta</button>
+        </div>
       </div>
 
       <!-- Perfil autenticado -->
@@ -749,14 +764,6 @@
           </button>
         </form>
 
-        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-color); text-align: center;">
-          <p style="font-size: var(--font-size-xs); color: var(--text-secondary); margin-bottom: 10px;">
-            Prefere não criar conta agora?
-          </p>
-          <button class="btn btn-secondary" id="btnContinueAsGuest">
-            Continuar como visitante
-          </button>
-        </div>
       </div>
 
       <!-- Informação Didática sobre a Etapa 3 -->
