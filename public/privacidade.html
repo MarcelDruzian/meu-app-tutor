@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Privacidade — Tutor IA (rascunho)</title>
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  <link rel="stylesheet" href="/css/legal.css">
+</head>
+<body>
+  <main class="legal-page">
+    <p class="legal-draft" role="note">
+      <strong>Rascunho para revisão do responsável.</strong>
+      Este texto descreve apenas o que o código do aplicativo faz hoje. Não é um documento jurídico revisado.
+    </p>
+
+    <h1>Privacidade</h1>
+    <p><a href="/">← Voltar ao Tutor IA</a></p>
+
+    <h2>1. Uso sem conta (visitante)</h2>
+    <ul>
+      <li>Você pode estudar, praticar exercícios e consultar o progresso sem criar conta.</li>
+      <li>O histórico de estudos, os resultados dos exercícios e a meta diária ficam <strong>somente neste navegador</strong> (armazenamento local, <code>localStorage</code>). Eles não são enviados ao servidor e não aparecem em outro aparelho ou navegador.</li>
+      <li>Para apagar: na tela <em>Progresso</em>, use o botão “Limpar histórico deste navegador”. Limpar os dados de navegação do site também apaga essas informações.</li>
+      <li>Também ficam no navegador a preferência de tema (claro/escuro) e, se você entrar, o token da sua sessão.</li>
+    </ul>
+
+    <h2>2. Conta (opcional)</h2>
+    <ul>
+      <li>Ao criar uma conta, o servidor guarda nome, e-mail e a senha <strong>transformada em hash</strong> (scrypt com sal). A senha em texto puro não é armazenada.</li>
+      <li>Ao entrar, é criada uma sessão válida por até 7 dias. O servidor guarda apenas o hash do token da sessão. Sair encerra a sessão no servidor.</li>
+      <li>Com a conta conectada, o servidor também registra o histórico de estudos (curso, disciplina, assunto, pergunta e resumo) e contadores de progresso (explicações vistas, questionários respondidos e acertos).</li>
+      <li>O histórico local do navegador continua existindo; não há sincronização automática entre aparelhos.</li>
+      <li>Ainda não existe, no aplicativo, uma função para excluir a conta ou exportar os dados. Esse pedido deve ser feito ao responsável pelo serviço.</li>
+    </ul>
+
+    <h2>3. Envio de perguntas a terceiros</h2>
+    <ul>
+      <li>Se o responsável pelo servidor <strong>não</strong> configurar um provedor de IA externa, as explicações e exercícios são gerados pelo próprio servidor e suas perguntas não são enviadas a terceiros.</li>
+      <li>Se um provedor de IA for configurado (Google Gemini ou OpenAI), o curso, a disciplina, o assunto e a pergunta digitados são enviados a esse provedor para gerar a explicação. A tela de resultado indica quando a explicação foi gerada por IA.</li>
+    </ul>
+
+    <h2>4. Limite de uso e endereço IP</h2>
+    <ul>
+      <li>Para evitar abuso, o servidor conta as pesquisas por endereço IP (visitante) ou por conta (usuário conectado), apenas em memória, por uma janela de tempo. Essa contagem não é gravada em disco e é apagada quando o servidor reinicia.</li>
+    </ul>
+
+    <h2>5. O que não fazemos</h2>
+    <ul>
+      <li>O aplicativo não usa cookies de rastreamento, anúncios nem ferramentas de análise de terceiros.</li>
+    </ul>
+
+    <h2>6. Contato</h2>
+    <p id="legalSupport">Para dúvidas sobre estes dados, procure o responsável pelo serviço.</p>
+  </main>
+  <script src="/js/legal.js"></script>
+</body>
+</html>

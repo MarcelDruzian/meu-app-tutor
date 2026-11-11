@@ -1,0 +1,28 @@
+/* Páginas de Privacidade e Termos (estilo simples e independente do app) */
+:root { color-scheme: light dark; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+  background: #f7f8fc;
+  color: #1c2233;
+}
+.legal-page { max-width: 760px; margin: 0 auto; padding: 24px 18px 48px; }
+.legal-page h1 { font-size: 1.6rem; margin: 16px 0 4px; }
+.legal-page h2 { font-size: 1.1rem; margin-top: 28px; }
+.legal-page ul { padding-left: 20px; }
+.legal-page li { margin-bottom: 6px; }
+.legal-page a { color: #1f4fd6; }
+.legal-page a:focus-visible { outline: 3px solid #ff8a1f; outline-offset: 2px; }
+.legal-draft {
+  border: 2px dashed #c27a00;
+  background: #fff6e0;
+  color: #5a3a00;
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  body { background: #0f1422; color: #e6e9f2; }
+  .legal-page a { color: #8fb0ff; }
+  .legal-draft { background: #2b2210; color: #ffd98a; border-color: #d99a2b; }
+}

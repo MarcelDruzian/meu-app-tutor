@@ -258,6 +258,7 @@ GEMINI_MODEL=gemini-3.5-flash-lite
 AI_BACKOFF_MS=1000
 AI_RETRY_ATTEMPTS=3
 AI_TIMEOUT_MS=30000
+SUPPORT_EMAIL=suporte@exemplo.com
 ```
 
 ### Persistência em nuvem
@@ -267,6 +268,29 @@ O armazenamento atual usa JSON em disco. Isso funciona em ambiente simples, mas 
 - banco relacional ou NoSQL
 - armazenamento persistente do provedor
 - filesystem volume do host ou serviço especializado
+
+### Primeiro carregamento e hibernação da hospedagem (F07)
+
+Planos gratuitos de plataformas como Render, Railway ou Fly.io podem **hibernar** (suspender) o container após alguns minutos sem tráfego. Quando isso acontece, a primeira requisição após o período de inatividade sofre um atraso (*cold start*) que pode variar de alguns segundos a cerca de 30–60 segundos enquanto o processo Node reinicia.
+
+Para medir o tempo real do primeiro carregamento (e comparar com requisições subsequentes), execute duas chamadas com `curl`:
+
+```bash
+curl -o /dev/null -s -w "connect: %{time_connect}s | ttfb: %{time_starttransfer}s | total: %{time_total}s | http: %{http_code}\n" https://seu-app.onrender.com/api/status
+```
+
+No PowerShell (`curl.exe`):
+
+```powershell
+curl.exe -o NUL -s -w "connect: %{time_connect}s | ttfb: %{time_starttransfer}s | total: %{time_total}s | http: %{http_code}`n" https://seu-app.onrender.com/api/status
+```
+
+Se `time_starttransfer` for alto na primeira chamada e cair para poucos milissegundos na segunda, o atraso vem da hibernação do plano gratuito, não do código da aplicação.
+
+**Opções propostas para evitar ou reduzir esse atraso (não implementadas no código):**
+
+1. **Plano pago sem hibernação (*always-on*):** mantém a instância ativa de forma contínua na própria plataforma de hospedagem, eliminando o *cold start* e preservando o cache em memória do rate limiter e sessões ativas.
+2. **Monitor externo de disponibilidade (*uptime check*):** um serviço externo configurado para consultar `GET /api/status` em intervalo regular (respeitando os limites e termos da plataforma escolhida) mantém o processo aquecido durante os horários de uso, além de alertar caso o serviço fique fora do ar.
 
 ---
 

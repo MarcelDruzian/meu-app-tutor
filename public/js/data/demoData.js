@@ -497,19 +497,38 @@ function detectSubjectDomain(subject = '', topic = '') {
   return 'geral';
 }
 
+const LEVEL_DISPLAY = {
+  iniciante: 'Iniciante',
+  intermediario: 'Já tenho base',
+  revisao: 'Revisão para prova'
+};
+
+function applyLevelToDemoExplanation(explanation, level = 'intermediario') {
+  const normalizedLevel = LEVEL_DISPLAY[level] ? level : 'intermediario';
+  explanation.level = normalizedLevel;
+  if (normalizedLevel === 'iniciante') {
+    explanation.levelTag = `Nível: ${LEVEL_DISPLAY[normalizedLevel]} · Base guiada`;
+    explanation.summary = `[Modo Iniciante] ${explanation.summary}`;
+  } else if (normalizedLevel === 'revisao') {
+    explanation.levelTag = `Nível: ${LEVEL_DISPLAY[normalizedLevel]} · Foco em prova`;
+    explanation.summary = `[Modo Revisão] ${explanation.summary}`;
+  }
+  return explanation;
+}
+
 // Gerador dinâmico contextualizado por área do conhecimento
-export function generateSmartDemoExplanation(course, subject, topic, question, format = 'text') {
+export function generateSmartDemoExplanation(course, subject, topic, question, format = 'text', level = 'intermediario') {
   const preset = findMatchingPreset(topic, subject);
   if (preset) {
     const res = JSON.parse(JSON.stringify(preset.explanation));
     res.format = format;
-    return res;
+    return applyLevelToDemoExplanation(res, level);
   }
 
   const domain = detectSubjectDomain(subject, topic);
 
   if (domain === 'humanas') {
-    return {
+    return applyLevelToDemoExplanation({
       title: `${topic}: Contexto Histórico e Análise Crítica`,
       subtitle: `Estudo analítico de ${subject} para estudantes de ${course}`,
       levelTag: 'Ciências Humanas / História',
@@ -556,11 +575,11 @@ export function generateSmartDemoExplanation(course, subject, topic, question, f
           searchQuery: `${subject} ${topic} documentario historia resumo`
         }
       ]
-    };
+    }, level);
   }
 
   // Padrão Geral / Exatas / Outras áreas
-  return {
+  return applyLevelToDemoExplanation({
     title: `${topic} em ${subject}`,
     subtitle: `Guia Didático do Tutor IA para estudantes de ${course}`,
     levelTag: 'Conteúdo Personalizado',
@@ -607,11 +626,11 @@ export function generateSmartDemoExplanation(course, subject, topic, question, f
         searchQuery: `${subject} ${topic} explicacao didatica`
       }
     ]
-  };
+  }, level);
 }
 
 // Gerador de questões contextuais conectadas com a leitura
-export function generateDemoQuiz(course, subject, topic, explanationContext = null) {
+export function generateDemoQuiz(course, subject, topic, explanationContext = null, level = 'intermediario') {
   const preset = findMatchingPreset(topic, subject);
   if (preset && preset.quiz && preset.quiz.length > 0) {
     return JSON.parse(JSON.stringify(preset.quiz));

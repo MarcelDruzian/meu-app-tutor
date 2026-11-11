@@ -2,15 +2,22 @@
 // TUTOR IA - CONTROLADOR PRINCIPAL DA APLICAÇÃO (SPA)
 // ==========================================================
 
-import { TutorService } from './services/tutor.js';
-import { StorageService } from './services/storage.js';
+import { TutorService, formatRetryAfter } from './services/tutor.js';
+import { StorageService, computeStreak, computeQuizStats } from './services/storage.js';
 import { SpeechService } from './services/speech.js';
 import { AuthService } from './services/auth.js';
+
+const LEVEL_LABELS = {
+  iniciante: 'Iniciante (do zero)',
+  intermediario: 'Já tenho base',
+  revisao: 'Revisão para prova'
+};
 
 // Estado Global da Sessão Atual
 const state = {
   currentScreen: 'screenWelcome',
   format: 'text',
+  level: 'intermediario',
   quickQuestion: '',
   course: '',
   subject: '',
@@ -21,7 +28,11 @@ const state = {
   quizCurrentIndex: 0,
   quizScore: 0,
   quizAnswered: false,
-  isAudioPlaying: false
+  quizRunId: null,
+  quizFinished: false,
+  isAudioPlaying: false,
+  pendingAuthFlow: null,
+  apiStatus: null
 };
 
 // ==========================================================
@@ -37,6 +48,9 @@ export function switchScreen(targetScreenId) {
   if (target) {
     target.classList.add('active');
     state.currentScreen = targetScreenId;
+    if (targetScreenId !== 'screenAccount') {
+      state.pendingAuthFlow = null;
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     updateBottomNavState(targetScreenId);
   }
@@ -125,14 +139,87 @@ export function showToast(message, type = 'info', duration = 3500) {
   }, duration);
 }
 
-function ensureAuthenticatedAccess(actionLabel = 'pesquisar conteúdo') {
-  const isAuthenticated = StorageService.isAuthenticated();
-  if (!isAuthenticated) {
-    showToast(`Para ${actionLabel}, faça login com sua conta primeiro.`, 'warning', 4200);
-    switchScreen('screenAccount');
-    return false;
+function captureStudyFormSnapshot() {
+  return {
+    format: state.format || 'text',
+    level: state.level || 'intermediario',
+    quickQuestion: document.getElementById('inputQuickQuestion')?.value ?? state.quickQuestion ?? '',
+    course: document.getElementById('inputCourse')?.value ?? state.course ?? '',
+    subject: document.getElementById('inputSubject')?.value ?? state.subject ?? '',
+    topic: document.getElementById('inputTopic')?.value ?? state.topic ?? '',
+    specificQuestion: document.getElementById('inputSpecificQuestion')?.value ?? state.specificQuestion ?? ''
+  };
+}
+
+function syncLevelPills(level = state.level) {
+  const safeLevel = LEVEL_LABELS[level] ? level : 'intermediario';
+  state.level = safeLevel;
+  document.querySelectorAll('.level-pill').forEach(btn => {
+    btn.setAttribute('aria-pressed', String(btn.dataset.level === safeLevel));
+  });
+}
+
+function restoreStudyFormSnapshot(snapshot) {
+  if (!snapshot) return;
+
+  const setVal = (id, key, val) => {
+    const el = document.getElementById(id);
+    if (el && typeof val === 'string') el.value = val;
+    if (typeof val === 'string') state[key] = val;
+  };
+
+  setVal('inputQuickQuestion', 'quickQuestion', snapshot.quickQuestion);
+  setVal('inputCourse', 'course', snapshot.course);
+  setVal('inputSubject', 'subject', snapshot.subject);
+  setVal('inputTopic', 'topic', snapshot.topic);
+  setVal('inputSpecificQuestion', 'specificQuestion', snapshot.specificQuestion);
+
+  if (snapshot.level) {
+    syncLevelPills(snapshot.level);
   }
-  return true;
+
+  if (snapshot.format) {
+    state.format = snapshot.format;
+    document.querySelectorAll('.format-card').forEach(card => {
+      const radio = card.querySelector('input[type="radio"]');
+      const matched = radio?.value === snapshot.format;
+      if (radio) radio.checked = matched;
+      card.classList.toggle('selected', matched);
+      card.setAttribute('aria-pressed', String(Boolean(matched)));
+    });
+  }
+  syncAllQuickPillsState();
+}
+
+function openAccountPreservingFlow() {
+  if (state.currentScreen !== 'screenAccount') {
+    state.pendingAuthFlow = {
+      returnScreen: state.currentScreen,
+      formSnapshot: captureStudyFormSnapshot()
+    };
+  }
+  renderAccountScreen();
+  switchScreen('screenAccount');
+}
+
+function showRateLimitFeedback(err) {
+  const seconds = err?.retryAfterSeconds || 60;
+  const formattedWait = formatRetryAfter(seconds);
+  const message = `Limite de pesquisas atingido. Tente novamente em ${formattedWait} (Retry-After: ${seconds}s). O que você digitou foi mantido.`;
+  const alertBox = document.getElementById('rateLimitAlertBox');
+  if (alertBox) {
+    alertBox.textContent = `⏳ ${message}`;
+    alertBox.hidden = false;
+  }
+  showToast(message, 'warning', 6000);
+}
+
+function clearRateLimitFeedback() {
+  const alertBox = document.getElementById('rateLimitAlertBox');
+  if (alertBox) {
+    alertBox.hidden = true;
+    alertBox.textContent = '';
+  }
 }
 
 // ==========================================================
@@ -140,27 +227,28 @@ function ensureAuthenticatedAccess(actionLabel = 'pesquisar conteúdo') {
 // ==========================================================
 function initFormatSelection() {
   const formatCards = document.querySelectorAll('.format-card');
-  formatCards.forEach(card => {
-    card.addEventListener('click', () => {
-      formatCards.forEach(c => {
-        c.classList.remove('selected');
-        c.setAttribute('aria-pressed', 'false');
-      });
-      card.classList.add('selected');
-      card.setAttribute('aria-pressed', 'true');
-      const radio = card.querySelector('input[type="radio"]');
-      if (radio) {
-        radio.checked = true;
-        state.format = radio.value;
-      }
+  const syncFormatCards = selectedValue => {
+    formatCards.forEach(c => {
+      const radio = c.querySelector('input[type="radio"]');
+      const isSelected = radio ? (selectedValue ? radio.value === selectedValue : radio.checked) : false;
+      if (radio && selectedValue) radio.checked = isSelected;
+      c.classList.toggle('selected', isSelected);
+      c.setAttribute('aria-pressed', String(isSelected));
     });
-  });
+    if (selectedValue) state.format = selectedValue;
+  };
 
   formatCards.forEach(card => {
     const radio = card.querySelector('input[type="radio"]');
-    const isSelected = radio?.checked;
-    card.setAttribute('aria-pressed', String(Boolean(isSelected)));
+    card.addEventListener('click', () => {
+      if (radio) syncFormatCards(radio.value);
+    });
+    radio?.addEventListener('change', () => {
+      if (radio.checked) syncFormatCards(radio.value);
+    });
   });
+
+  syncFormatCards();
 
   document.getElementById('btnStartResearch')?.addEventListener('click', () => {
     switchScreen('screenFormat');
@@ -209,6 +297,26 @@ function resetStudyInfoForm() {
 
     state[stateKey] = '';
   });
+
+  const quickQ = document.getElementById('inputQuickQuestion');
+  if (quickQ) quickQ.value = '';
+  state.quickQuestion = '';
+  syncLevelPills('intermediario');
+  syncAllQuickPillsState();
+}
+
+function syncPillsForInput(inputId) {
+  const inputEl = document.getElementById(inputId);
+  const currentVal = inputEl ? inputEl.value : '';
+  document.querySelectorAll(`.quick-pill[data-target="${inputId}"]`).forEach(pill => {
+    const pillVal = pill.dataset.val || '';
+    const isPressed = Boolean(pillVal) && currentVal === pillVal;
+    pill.setAttribute('aria-pressed', String(isPressed));
+  });
+}
+
+function syncAllQuickPillsState() {
+  ['inputCourse', 'inputSubject', 'inputTopic'].forEach(syncPillsForInput);
 }
 
 function initStudyInfoForm() {
@@ -217,7 +325,7 @@ function initStudyInfoForm() {
   const topicInput = document.getElementById('inputTopic');
   const specificQInput = document.getElementById('inputSpecificQuestion');
 
-  // Pílulas de preenchimento rápido
+  // Pílulas de preenchimento rápido (<button type="button"> acessíveis por teclado)
   document.querySelectorAll('.quick-pill').forEach(pill => {
     pill.addEventListener('click', () => {
       const targetId = pill.dataset.target;
@@ -228,8 +336,27 @@ function initStudyInfoForm() {
         inputEl.classList.remove('input-error');
         const errEl = document.getElementById(targetId.replace('input', 'err'));
         if (errEl) errEl.classList.remove('visible');
+        syncPillsForInput(targetId);
+        if (targetVal === '') {
+          inputEl.focus();
+        }
       }
     });
+  });
+
+  [courseInput, subjectInput, topicInput].forEach(input => {
+    input?.addEventListener('input', () => syncPillsForInput(input.id));
+  });
+
+  document.querySelectorAll('.level-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      syncLevelPills(btn.dataset.level);
+    });
+  });
+  syncLevelPills(state.level);
+
+  document.getElementById('rateNoticeLoginLink')?.addEventListener('click', () => {
+    openAccountPreservingFlow();
   });
 
   // Microfone / Reconhecimento de Voz (Web Speech API)
@@ -282,11 +409,9 @@ function initStudyInfoForm() {
     switchScreen('screenFormat');
   });
 
-  // Submissão da Pesquisa
+  // Submissão da Pesquisa (estudo livre: sem bloqueio de login)
   document.getElementById('btnSubmitSearch')?.addEventListener('click', async () => {
-    if (!ensureAuthenticatedAccess('pesquisar conteúdo')) {
-      return;
-    }
+    clearRateLimitFeedback();
 
     const course = courseInput?.value.trim();
     const subject = subjectInput?.value.trim();
@@ -347,45 +472,58 @@ function initStudyInfoForm() {
         subject,
         topic,
         question: specificQuestion,
-        format: state.format
+        format: state.format,
+        level: state.level
       });
 
       state.currentExplanation = result.explanation;
+      const studyEventId = `study_${result.meta?.generatedAt || Date.now()}`;
 
-      // Salva a sessão no histórico local e no backend quando houver autenticação
-      StorageService.saveStudySession({
+      // Salva a sessão no histórico local (somente este navegador) e na conta quando logado
+      const savedLocal = StorageService.saveStudySession({
+        eventId: studyEventId,
         course,
         subject,
         topic,
         question: specificQuestion,
         format: state.format,
+        level: state.level,
         summary: result.explanation.summary
       });
-      StorageService.saveStudySessionRemote({
-        course,
-        subject,
-        topic,
-        question: specificQuestion,
-        format: state.format,
-        summary: result.explanation.summary
-      });
-      StorageService.saveProgressRemote({
-        course,
-        subject,
-        topic,
-        explanationsSeen: 1
-      }).catch(() => {});
+
+      if (StorageService.isAuthenticated()) {
+        StorageService.saveStudySessionRemote({
+          course,
+          subject,
+          topic,
+          question: specificQuestion,
+          format: state.format,
+          summary: result.explanation.summary
+        }).catch(() => {});
+        StorageService.saveProgressRemote({
+          course,
+          subject,
+          topic,
+          explanationsSeen: 1
+        }).catch(() => {});
+      }
 
       // Renderiza os dados na Tela 4
       renderResultScreen(result.explanation, result.meta);
       switchScreen('screenResult');
-      if (result.meta && !result.meta.isDemo) {
+      if (!savedLocal) {
+        showToast('Explicação pronta, mas não foi possível salvar no histórico deste navegador.', 'warning', 4500);
+      } else if (result.meta && !result.meta.isDemo) {
         showToast(`Conteúdo gerado com IA (${result.meta.provider || 'Tempo Real'})!`, 'success');
       } else {
         showToast('Conteúdo preparado com sucesso!', 'success');
       }
     } catch (err) {
-      showToast('Ocorreu um erro ao gerar a explicação: ' + err.message, 'error');
+      if (err?.status === 429) {
+        showRateLimitFeedback(err);
+      } else {
+        showToast('Ocorreu um erro ao gerar a explicação: ' + err.message, 'error');
+      }
     } finally {
       if (btnSubmit) btnSubmit.disabled = false;
       if (spinner) spinner.style.display = 'none';
@@ -403,6 +541,11 @@ function renderResultScreen(explanation, meta = {}) {
   
   const formatNames = { text: 'Texto', video: 'Vídeo', audio: 'Áudio' };
   document.getElementById('badgeFormat').textContent = `Formato: ${formatNames[state.format] || 'Texto'}`;
+  const activeLevel = meta?.level || explanation?.level || state.level || 'intermediario';
+  const badgeLevel = document.getElementById('badgeLevel');
+  if (badgeLevel) {
+    badgeLevel.textContent = `Nível: ${LEVEL_LABELS[activeLevel] || LEVEL_LABELS.intermediario}`;
+  }
 
   document.getElementById('resultTitle').textContent = explanation.title || `${state.topic} em ${state.subject}`;
   document.getElementById('resultSubtitle').textContent = explanation.subtitle || explanation.summary;
@@ -421,8 +564,8 @@ function renderResultScreen(explanation, meta = {}) {
   } else {
     banner?.classList.remove('ai-active');
     if (bannerIcon) bannerIcon.textContent = 'ℹ️';
-    if (bannerTitle) bannerTitle.textContent = 'Modo de Demonstração (Etapa 2)';
-    if (bannerNotice) bannerNotice.textContent = meta?.notice || 'Esta explicação foi gerada com conteúdo didático estruturado. Na Etapa 2, configure sua chave no arquivo .env para ativar a IA em tempo real.';
+    if (bannerTitle) bannerTitle.textContent = 'Modo de Demonstração';
+    if (bannerNotice) bannerNotice.textContent = meta?.notice || 'Esta explicação foi gerada com conteúdo didático estruturado pelo servidor (sem provedor de IA configurado).';
   }
 
   // Seção Conceito
@@ -572,12 +715,8 @@ function initAudioControls() {
     switchScreen('screenStudyInfo');
   });
 
-  // Botão Ir para Quiz
+  // Botão Ir para Quiz (acesso livre para visitante e usuário conectado)
   document.getElementById('btnGoToQuiz')?.addEventListener('click', async () => {
-    if (!ensureAuthenticatedAccess('gerar questionários')) {
-      return;
-    }
-
     SpeechService.stopSpeech();
     await startQuizForCurrentTopic();
   });
@@ -587,10 +726,6 @@ function initAudioControls() {
 // TELA 5: EXERCÍCIOS E QUESTIONÁRIOS INTERATIVOS
 // ==========================================================
 async function startQuizForCurrentTopic() {
-  if (!ensureAuthenticatedAccess('gerar questionários')) {
-    return;
-  }
-
   if (!state.topic) {
     state.course = 'Ensino Médio';
     state.subject = 'Física';
@@ -609,12 +744,24 @@ async function startQuizForCurrentTopic() {
     }
   }
 
-  const quizData = await TutorService.requestQuiz({
-    course: state.course,
-    subject: state.subject,
-    topic: state.topic,
-    explanationContext
-  });
+  let quizData;
+  try {
+    quizData = await TutorService.requestQuiz({
+      course: state.course,
+      subject: state.subject,
+      topic: state.topic,
+      explanationContext,
+      level: state.level,
+      useAi: true
+    });
+  } catch (err) {
+    if (err?.status === 429) {
+      showToast(`Limite de pesquisas atingido. Tente novamente em ${formatRetryAfter(err.retryAfterSeconds)} (Retry-After: ${err.retryAfterSeconds}s).`, 'warning', 6000);
+      return;
+    }
+    showToast('Erro ao carregar questionário: ' + err.message, 'error');
+    return;
+  }
 
   if (quizData.meta && !quizData.meta.isDemo) {
     showToast(`Simulado gerado por IA (${quizData.meta.provider || 'Tempo Real'})!`, 'success');
@@ -624,9 +771,15 @@ async function startQuizForCurrentTopic() {
   state.quizCurrentIndex = 0;
   state.quizScore = 0;
   state.quizAnswered = false;
+  state.quizRunId = `quiz_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`;
+  state.quizFinished = false;
 
-  document.getElementById('quizSubtitle').textContent = 
-    `Questões comentadas sobre ${state.topic} (${state.subject})`;
+  const levelLabel = LEVEL_LABELS[quizData.meta?.level || state.level] || LEVEL_LABELS.intermediario;
+  const sourceLabel = quizData.meta && !quizData.meta.isDemo
+    ? `IA (${quizData.meta.provider || 'Tempo Real'})`
+    : 'Modo rápido';
+  document.getElementById('quizSubtitle').textContent =
+    `Questões sobre ${state.topic} (${state.subject}) · ${levelLabel} · ${sourceLabel}`;
 
   document.getElementById('quizProgressCard').style.display = 'block';
   document.getElementById('activeQuestionCard').style.display = 'block';
@@ -743,10 +896,16 @@ function initQuizNavigation() {
     state.quizCurrentIndex = 0;
     state.quizScore = 0;
     state.quizAnswered = false;
+    state.quizRunId = `quiz_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`;
+    state.quizFinished = false;
     document.getElementById('quizProgressCard').style.display = 'block';
     document.getElementById('activeQuestionCard').style.display = 'block';
     document.getElementById('quizResultSummaryCard').style.display = 'none';
     renderCurrentQuizQuestion();
+  });
+
+  document.getElementById('btnNewQuiz')?.addEventListener('click', async () => {
+    await startQuizForCurrentTopic();
   });
 
   document.getElementById('btnBackToResultFromQuiz')?.addEventListener('click', () => {
@@ -763,7 +922,7 @@ function finishQuiz() {
 
   const total = state.currentQuiz.length;
   const score = state.quizScore;
-  const pct = Math.round((score / total) * 100);
+  const pct = total > 0 ? Math.round((score / total) * 100) : 0;
 
   document.getElementById('finalScoreNumber').textContent = `${pct}%`;
   document.getElementById('finalScoreFraction').textContent = `${score} de ${total} acertos`;
@@ -782,39 +941,63 @@ function finishQuiz() {
     msg.textContent = 'O erro faz parte do aprendizado. Leia novamente o resumo do Tutor IA e tente mais uma vez.';
   }
 
-  // Salvar no histórico local e remoto
-  StorageService.saveQuizResult({
+  // Idempotência: evita contagem dupla caso o encerramento seja acionado mais de uma vez para o mesmo questionário
+  if (state.quizFinished) {
+    return;
+  }
+  state.quizFinished = true;
+  const eventId = state.quizRunId || `quiz_${Date.now()}`;
+
+  const savedLocal = StorageService.saveQuizResult({
+    eventId,
     topic: state.topic,
     subject: state.subject,
     score: score,
     total: total,
     course: state.course
   });
-  StorageService.saveProgressRemote({
-    course: state.course,
-    subject: state.subject,
-    topic: state.topic,
-    quizzesAnswered: 1,
-    correctAnswers: score
-  }).catch(() => {});
-  StorageService.saveQuizResultRemote({
-    course: state.course,
-    subject: state.subject,
-    topic: state.topic,
-    score,
-    total
-  }).catch(() => {});
 
-  showToast('Resultado salvo no seu progresso local e na conta!', 'success');
+  const isAuth = StorageService.isAuthenticated();
+  if (isAuth) {
+    StorageService.saveProgressRemote({
+      course: state.course,
+      subject: state.subject,
+      topic: state.topic,
+      quizzesAnswered: 1,
+      questionsAnswered: total,
+      correctAnswers: score
+    }).catch(() => {});
+    StorageService.saveQuizResultRemote({
+      course: state.course,
+      subject: state.subject,
+      topic: state.topic,
+      score,
+      total
+    }).catch(() => {});
+  }
+
+  if (!savedLocal) {
+    showToast('Resultado exibido, mas não foi possível salvar neste navegador.', 'warning', 4500);
+  } else if (isAuth) {
+    showToast('Resultado salvo neste navegador e na sua conta!', 'success');
+  } else {
+    showToast('Resultado salvo no histórico deste navegador!', 'success');
+  }
 }
 
 // ==========================================================
 // TELA 6: HISTÓRICO E PROGRESSO
 // ==========================================================
 async function renderHistoryScreen() {
-  let history = StorageService.getHistory();
-  let quizzes = StorageService.getQuizzes();
-  let goals = StorageService.getGoals();
+  const snapshot = StorageService.readLocalProgressSnapshot();
+  let history = snapshot.history;
+  let quizzes = snapshot.quizzes;
+  const goals = snapshot.goals;
+
+  let totalStudiesCount = history.length;
+  let totalQuizzesCount = quizzes.length;
+  let streakDays = goals.streak;
+  let remoteError = false;
 
   const token = StorageService.getSessionToken();
   if (token) {
@@ -827,42 +1010,56 @@ async function renderHistoryScreen() {
       if (historyResponse.ok) {
         const historyData = await historyResponse.json().catch(() => ({}));
         if (Array.isArray(historyData.history)) {
-          history = historyData.history.map(item => ({
-            id: item.id,
-            date: item.createdAt,
-            course: item.course,
-            subject: item.subject,
-            topic: item.topic,
-            question: item.question || '',
-            format: item.format || 'text',
-            summary: item.summary || ''
-          }));
+          const remoteExplanations = historyData.history
+            .filter(item => item.type !== 'quiz')
+            .map(item => ({
+              id: item.id,
+              date: item.createdAt,
+              course: item.course,
+              subject: item.subject,
+              topic: item.topic,
+              question: item.question || '',
+              format: item.format || 'text',
+              summary: item.summary || ''
+            }));
+          if (remoteExplanations.length > 0 || history.length === 0) {
+            history = remoteExplanations;
+          }
+          const remoteDates = historyData.history.map(item => item.createdAt).filter(Boolean);
+          streakDays = computeStreak([
+            ...remoteDates,
+            ...snapshot.history.map(h => h?.date || h?.createdAt),
+            ...snapshot.quizzes.map(q => q?.date || q?.createdAt),
+            ...goals.activityDates
+          ]);
         }
       }
 
       if (progressResponse.ok) {
         const progressData = await progressResponse.json().catch(() => ({}));
-        if (Array.isArray(progressData.progress)) {
-          const totalQuizzes = progressData.progress.reduce((sum, item) => sum + Number(item.quizzesAnswered || 0), 0);
-          const totalCorrect = progressData.progress.reduce((sum, item) => sum + Number(item.correctAnswers || 0), 0);
-          const totalStudies = progressData.progress.reduce((sum, item) => sum + Number(item.explanationsSeen || 0), 0);
-          quizzes = progressData.progress.map(item => ({
-            id: `${item.topic}-${item.subject}`,
-            date: item.lastUpdated,
-            topic: item.topic,
-            subject: item.subject,
-            score: Number(item.correctAnswers || 0),
-            total: Number(item.quizzesAnswered || 0) || 1,
-            percentage: Number(item.quizzesAnswered || 0) > 0 ? Math.round((Number(item.correctAnswers || 0) / Number(item.quizzesAnswered || 0)) * 100) : 0
-          }));
-          if (totalStudies > 0 || totalQuizzes > 0) {
-            document.getElementById('statTotalStudies').textContent = String(totalStudies);
-            document.getElementById('statQuizzesDone').textContent = String(totalQuizzes);
-            document.getElementById('goalProgressLabel').textContent = `${totalCorrect} acertos · ${totalQuizzes} quizzes`;
+        if (Array.isArray(progressData.progress) && progressData.progress.length > 0) {
+          const remoteQuizzesCount = progressData.progress.reduce((sum, item) => sum + Number(item.quizzesAnswered || 0), 0);
+          const remoteStudiesCount = progressData.progress.reduce((sum, item) => sum + Number(item.explanationsSeen || 0), 0);
+          totalStudiesCount = Math.max(remoteStudiesCount, history.length);
+          totalQuizzesCount = Math.max(remoteQuizzesCount, quizzes.length);
+
+          const remoteQuizEntries = progressData.progress
+            .filter(item => Number(item.questionsAnswered || 0) > 0)
+            .map(item => ({
+              id: `${item.topic}-${item.subject}`,
+              date: item.lastUpdated,
+              topic: item.topic,
+              subject: item.subject,
+              score: Number(item.correctAnswers || 0),
+              total: Number(item.questionsAnswered || 0)
+            }));
+          if (remoteQuizEntries.length > 0) {
+            quizzes = remoteQuizEntries;
           }
         }
       }
     } catch (error) {
+      remoteError = true;
       console.warn('Não foi possível carregar o histórico remoto:', error);
     }
   }
@@ -873,22 +1070,20 @@ async function renderHistoryScreen() {
 
   const recentTopics = history.slice(0, 6);
   const lastTopic = recentTopics.find(item => item.topic)?.topic || 'Nenhum tema';
-  const totalQuizAttempts = quizzes.reduce((sum, item) => sum + Number(item.total || 0), 0);
-  const totalQuizCorrect = quizzes.reduce((sum, item) => sum + Number(item.score || 0), 0);
-  const accuracyPct = totalQuizAttempts > 0 ? Math.round((totalQuizCorrect / totalQuizAttempts) * 100) : 0;
+  const quizStats = computeQuizStats(quizzes);
 
   if (focusValue) focusValue.textContent = lastTopic.length > 18 ? `${lastTopic.slice(0, 18)}…` : lastTopic;
-  if (accuracyValue) accuracyValue.textContent = `${accuracyPct}%`;
+  if (accuracyValue) accuracyValue.textContent = quizStats.accuracyLabel;
   if (nextValue) {
     nextValue.textContent = recentTopics.length > 0 ? 'Revisar' : 'Estudar';
   }
 
-  // Estatísticas
-  document.getElementById('statTotalStudies').textContent = String(history.length);
-  document.getElementById('statQuizzesDone').textContent = String(quizzes.length);
-  document.getElementById('statStreakDays').textContent = `${goals.streak || 1}🔥`;
+  // Estatísticas honestas (nunca força 1 nem 0% falso)
+  document.getElementById('statTotalStudies').textContent = String(totalStudiesCount);
+  document.getElementById('statQuizzesDone').textContent = String(totalQuizzesCount);
+  document.getElementById('statStreakDays').textContent = streakDays > 0 ? `${streakDays}🔥` : '0';
 
-  // Meta diária
+  // Meta diária idempotente
   const target = goals.dailyTarget || 3;
   const done = goals.completedToday || 0;
   const pct = Math.min(100, Math.round((done / target) * 100));
@@ -896,20 +1091,33 @@ async function renderHistoryScreen() {
   document.getElementById('goalProgressLabel').textContent = `${done} de ${target} concluídos`;
   document.getElementById('goalProgressBarFill').style.width = `${pct}%`;
 
-  // Lista de itens recentes
+  // Lista de itens recentes ou estado vazio útil
   const container = document.getElementById('historyListContainer');
+  const storageWarningHtml = snapshot.readError
+    ? `<div class="guest-rate-notice is-limit-error" role="alert" style="margin-bottom: 12px;">⚠️ ${snapshot.readError}</div>`
+    : (remoteError
+      ? `<div class="guest-rate-notice" role="status" style="margin-bottom: 12px;">ℹ️ Não foi possível consultar os dados da conta no servidor agora; exibindo o que está salvo neste navegador.</div>`
+      : '');
+
   if (history.length === 0) {
     container.innerHTML = `
+      ${storageWarningHtml}
       <div class="empty-history-box">
-        <div style="font-size: 2.2rem; margin-bottom: 8px;">📚</div>
-        <p>Você ainda não realizou pesquisas de estudo neste navegador.</p>
-        <p style="font-size: 12px; margin-top: 4px;">Inicie sua primeira pesquisa na aba <strong>Estudar</strong>!</p>
+        <div style="font-size: 2.2rem; margin-bottom: 8px;" aria-hidden="true">📚</div>
+        <p>Você ainda não concluiu nenhum estudo neste navegador.</p>
+        <p style="font-size: 12px; margin-top: 4px; margin-bottom: 14px;">Escolha um tema na aba <strong>Estudar</strong> para ver seu histórico e metas aqui.</p>
+        <button type="button" class="btn btn-primary" id="btnEmptyStartStudy" style="width: auto; margin: 0 auto;">
+          🚀 Começar a estudar agora
+        </button>
       </div>
     `;
+    document.getElementById('btnEmptyStartStudy')?.addEventListener('click', () => {
+      switchScreen('screenFormat');
+    });
     return;
   }
 
-  container.innerHTML = history.map(item => {
+  container.innerHTML = storageWarningHtml + history.map(item => {
     const dateValue = item.date || item.createdAt || new Date().toISOString();
     const dateFormatted = new Date(dateValue).toLocaleDateString('pt-BR', {
       day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
@@ -939,6 +1147,7 @@ async function renderHistoryScreen() {
         state.topic = item.topic || 'Tema';
         state.specificQuestion = item.question || '';
         state.format = item.format || 'text';
+        state.level = item.level || 'intermediario';
 
         showToast(`Reabrindo estudo sobre ${state.topic}...`, 'info');
         const result = await TutorService.requestExplanation({
@@ -946,7 +1155,8 @@ async function renderHistoryScreen() {
           subject: state.subject,
           topic: state.topic,
           question: state.specificQuestion,
-          format: state.format
+          format: state.format,
+          level: state.level
         });
         state.currentExplanation = result.explanation;
         renderResultScreen(result.explanation, result.meta || {});
@@ -954,13 +1164,18 @@ async function renderHistoryScreen() {
       }
     });
   });
+}
 
-  // Botão Limpar Histórico
+function initClearHistoryButton() {
   document.getElementById('btnClearHistory')?.addEventListener('click', () => {
-    if (confirm('Deseja realmente limpar todo o histórico de estudos deste navegador?')) {
-      StorageService.clearHistory();
+    if (confirm('Deseja realmente apagar o histórico, simulados e metas salvos neste navegador?')) {
+      const ok = StorageService.clearHistory();
       renderHistoryScreen();
-      showToast('Histórico local removido com sucesso.', 'info');
+      if (ok) {
+        showToast('Histórico local removido deste navegador.', 'info');
+      } else {
+        showToast('Não foi possível limpar os dados locais neste navegador.', 'error');
+      }
     }
   });
 }
@@ -1032,17 +1247,19 @@ function renderAccountScreen() {
 
   if (!isLoggedIn) {
     nameEl.textContent = 'Estudante Visitante';
-    noticeEl.textContent = 'Você está usando como visitante';
+    noticeEl.textContent = 'Estudo livre sem cadastro (conta opcional)';
     avatarEl.textContent = '🎓';
     if (profileCard) profileCard.hidden = true;
     if (guestCard) guestCard.hidden = false;
     if (authFormContainer) authFormContainer.style.display = 'none';
     if (tabs) tabs.style.display = 'none';
+    updateHeaderAccountChip();
+    updateRateLimitNotices();
     return;
   }
 
   nameEl.textContent = account.name || 'Estudante autenticado';
-  noticeEl.textContent = 'Você está logado';
+  noticeEl.textContent = 'Você está logado (histórico salvo neste servidor)';
   avatarEl.textContent = getInitials(account.name || account.email, 'E');
 
   if (guestCard) guestCard.hidden = true;
@@ -1054,6 +1271,48 @@ function renderAccountScreen() {
   if (profileAvatar) profileAvatar.textContent = getInitials(account.name || account.email, 'E');
 
   updateHeaderAccountChip();
+  updateRateLimitNotices();
+}
+
+function updateRateLimitNotices() {
+  const maxRequests = state.apiStatus?.tutorRateLimit?.maxRequests || 30;
+  const welcomeLimitEl = document.getElementById('welcomeRateLimit');
+  if (welcomeLimitEl) welcomeLimitEl.textContent = String(maxRequests);
+
+  const studyNotice = document.getElementById('guestRateNotice');
+  if (!studyNotice) return;
+
+  if (StorageService.isAuthenticated()) {
+    studyNotice.innerHTML = `✅ <strong>Conta conectada:</strong> até <span id="rateNoticeLimit">${maxRequests}</span> pesquisas por hora na sua conta. Seu histórico também é registrado neste servidor.`;
+    return;
+  }
+
+  studyNotice.innerHTML = `🔓 <strong>Estudo livre:</strong> como visitante você pode fazer até <span id="rateNoticeLimit">${maxRequests}</span> pesquisas por hora (limite por endereço IP). <button type="button" class="inline-link-btn" id="rateNoticeLoginLink">Entrar ou criar conta</button> (opcional; o que você digitou será mantido).`;
+  document.getElementById('rateNoticeLoginLink')?.addEventListener('click', () => {
+    openAccountPreservingFlow();
+  });
+}
+
+function renderPasswordRecoveryNotice(boxEl) {
+  if (!boxEl) return;
+  boxEl.textContent = '';
+
+  const textLead = document.createTextNode(
+    'A recuperação automática de senha por e-mail está indisponível no momento (nenhum serviço de envio de e-mail está configurado neste servidor). '
+  );
+  boxEl.appendChild(textLead);
+
+  const supportEmail = state.apiStatus?.supportEmail;
+  if (supportEmail) {
+    boxEl.appendChild(document.createTextNode('Canal de suporte: '));
+    const link = document.createElement('a');
+    link.href = `mailto:${supportEmail}`;
+    link.textContent = supportEmail;
+    boxEl.appendChild(link);
+    boxEl.appendChild(document.createTextNode('.'));
+  } else {
+    boxEl.appendChild(document.createTextNode('Se precisar recuperar o acesso, procure o responsável pelo serviço.'));
+  }
 }
 
 function setButtonLoading(button, isLoading, label) {
@@ -1133,6 +1392,9 @@ function initAccountScreen() {
 
   let mode = 'login';
 
+  const btnForgot = document.getElementById('btnForgotPassword');
+  const recoveryBox = document.getElementById('passwordRecoveryBox');
+
   const applyAuthMode = nextMode => {
     mode = nextMode;
     const isRegister = nextMode === 'register';
@@ -1142,12 +1404,16 @@ function initAccountScreen() {
     tabRegister?.setAttribute('aria-selected', String(isRegister));
     if (groupName) groupName.style.display = isRegister ? 'block' : 'none';
     if (boxForgot) boxForgot.style.display = isRegister ? 'none' : 'block';
+    if (recoveryBox && isRegister) {
+      recoveryBox.hidden = true;
+      btnForgot?.setAttribute('aria-expanded', 'false');
+    }
     if (guestCard) guestCard.hidden = true;
     if (authFormContainer) authFormContainer.style.display = 'block';
     const tabs = document.getElementById('accountTabs');
     if (tabs) tabs.style.display = 'flex';
     if (btnSubmit) {
-      btnSubmit.textContent = isRegister ? 'Criar minha conta gratuita' : 'Entrar na minha conta';
+      btnSubmit.textContent = isRegister ? 'Criar minha conta' : 'Entrar na minha conta';
       btnSubmit.dataset.defaultLabel = btnSubmit.textContent;
     }
   };
@@ -1199,18 +1465,36 @@ function initAccountScreen() {
       if (passwordInput) passwordInput.value = '';
       renderAccountScreen();
       updateHeaderAccountChip();
+      checkAndApplyApiStatus();
       showToast(mode === 'register'
         ? 'Conta criada! Você já está logado.'
         : 'Login realizado com sucesso!', 'success');
+
+      // Retoma fluxo pendente preservando formato, campos digitados e tela de origem (F01)
+      if (state.pendingAuthFlow?.returnScreen && state.pendingAuthFlow.returnScreen !== 'screenAccount') {
+        const pending = state.pendingAuthFlow;
+        state.pendingAuthFlow = null;
+        restoreStudyFormSnapshot(pending.formSnapshot);
+        switchScreen(pending.returnScreen);
+      }
     } catch (error) {
       showToast(error.message || 'Não foi possível autenticar no momento.', 'error');
     } finally {
-      setButtonLoading(submitButton, false, mode === 'register' ? 'Criar minha conta gratuita' : 'Entrar na minha conta');
+      setButtonLoading(submitButton, false, mode === 'register' ? 'Criar minha conta' : 'Entrar na minha conta');
     }
   });
 
-  document.getElementById('btnForgotPassword')?.addEventListener('click', () => {
-    showToast('Recuperação de senha em breve.', 'warning');
+  btnForgot?.addEventListener('click', () => {
+    if (!recoveryBox) return;
+    const shouldOpen = recoveryBox.hidden;
+    if (shouldOpen) {
+      renderPasswordRecoveryNotice(recoveryBox);
+      recoveryBox.hidden = false;
+      btnForgot.setAttribute('aria-expanded', 'true');
+    } else {
+      recoveryBox.hidden = true;
+      btnForgot.setAttribute('aria-expanded', 'false');
+    }
   });
 
   document.getElementById('btnLogout')?.addEventListener('click', async () => {
@@ -1221,6 +1505,7 @@ function initAccountScreen() {
       StorageService.saveAccount({ isGuest: true, name: 'Estudante Visitante', email: '' });
       renderAccountScreen();
       updateHeaderAccountChip();
+      checkAndApplyApiStatus();
       return;
     }
 
@@ -1231,6 +1516,7 @@ function initAccountScreen() {
       StorageService.saveAccount({ isGuest: true, name: 'Estudante Visitante', email: '' });
       renderAccountScreen();
       updateHeaderAccountChip();
+      checkAndApplyApiStatus();
       showToast('Sessão encerrada com sucesso.', 'success');
     } catch (error) {
       showToast(error.message || 'Não foi possível encerrar a sessão.', 'error');
@@ -1241,8 +1527,7 @@ function initAccountScreen() {
 
   const btnHeaderAccount = document.getElementById('headerAccountChip');
   btnHeaderAccount?.addEventListener('click', () => {
-    renderAccountScreen();
-    switchScreen('screenAccount');
+    openAccountPreservingFlow();
   });
 
   applyAuthMode('login');
@@ -1262,18 +1547,21 @@ function formatMarkdownText(text) {
 }
 
 // ==========================================================
-// VERIFICAÇÃO DO STATUS DA IA (ETAPA 2)
+// VERIFICAÇÃO DO STATUS DA IA E CONFIGURAÇÃO DO SERVIDOR
 // ==========================================================
 async function checkAndApplyApiStatus() {
   const status = await TutorService.getApiStatus();
+  state.apiStatus = status;
+  updateRateLimitNotices();
+
   const pill = document.getElementById('headerStatusPill');
   const text = document.getElementById('headerStatusText');
   const hasSession = Boolean(StorageService.getSessionToken());
 
   if (hasSession) {
     pill?.classList.add('ai-active');
-    pill?.setAttribute('title', 'Sessão autenticada ativa · Etapa 3');
-    if (text) text.textContent = 'Etapa 3 · Conta ativa';
+    pill?.setAttribute('title', 'Conta conectada neste servidor');
+    if (text) text.textContent = 'Conta ativa';
     return;
   }
 
@@ -1283,8 +1571,8 @@ async function checkAndApplyApiStatus() {
     if (text) text.textContent = 'IA Ativa 🤖';
   } else {
     pill?.classList.remove('ai-active');
-    pill?.setAttribute('title', 'Modo Demonstração ativo: adicione a chave no arquivo .env');
-    if (text) text.textContent = 'Etapa 2 · Demo';
+    pill?.setAttribute('title', 'Modo de demonstração ativo: conteúdo didático gerado pelo servidor');
+    if (text) text.textContent = 'Modo Demo';
   }
 }
 
@@ -1316,24 +1604,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Logo volta para Home
-  document.getElementById('btnLogoHome')?.addEventListener('click', () => {
+  // Logo volta para Home (clique e teclado)
+  const btnLogoHome = document.getElementById('btnLogoHome');
+  btnLogoHome?.addEventListener('click', () => {
     switchScreen('screenWelcome');
+  });
+  btnLogoHome?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      switchScreen('screenWelcome');
+    }
   });
 
   initThemeToggle();
 
-  // Verifica status da IA
+  // Verifica status da IA e parâmetros públicos (limite, suporte)
   checkAndApplyApiStatus();
 
   // Configuração das abas da barra de navegação inferior
   document.querySelectorAll('.nav-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const screenId = btn.dataset.screen;
+      if (screenId === 'screenAccount') {
+        openAccountPreservingFlow();
+        return;
+      }
       if (screenId === 'screenQuiz') {
-        if (!ensureAuthenticatedAccess('acessar exercícios')) {
-          return;
-        }
         if (!state.currentQuiz) {
           startQuizForCurrentTopic();
           return;
@@ -1348,6 +1644,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initStudyInfoForm();
   initAudioControls();
   initQuizNavigation();
+  initClearHistoryButton();
   initAccountScreen();
 
   // Registrar Service Worker para PWA
@@ -1360,5 +1657,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  console.log('🎓 Tutor IA inicializado com sucesso na Etapa 2 (IA Conectada).');
+  console.log('🎓 Tutor IA inicializado com sucesso.');
 });

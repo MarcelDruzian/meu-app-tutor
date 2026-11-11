@@ -63,7 +63,7 @@
         </button>
         <div class="demo-pill" id="headerStatusPill" title="Status da IA">
           <span class="pulse-dot" id="headerPulseDot"></span>
-          <span id="headerStatusText">Etapa 2 · Demo</span>
+          <span id="headerStatusText">Modo Demo</span>
         </div>
       </div>
     </div>
@@ -140,8 +140,8 @@
           <div class="feature-card">
             <div class="feature-icon-badge">📊</div>
             <div class="feature-info">
-              <h4>Histórico & Metas</h4>
-              <p>Acompanhe sua pontuação e revise pesquisas anteriores mesmo sem cadastro.</p>
+              <h4>Histórico &amp; Metas</h4>
+              <p>Acompanhe seus acertos e revise pesquisas salvas neste navegador mesmo sem cadastro.</p>
             </div>
           </div>
         </div>
@@ -154,7 +154,7 @@
         </div>
 
         <div class="guest-notice" style="margin-top: 16px;">
-          <span>🔓</span> Crie uma conta gratuita para pesquisar e salvar seu progresso.
+          <span>🔓</span> Estudo livre, sem cadastro obrigatório. Como visitante você pode fazer até <span id="welcomeRateLimit">30</span> pesquisas por hora; a conta é opcional para guardar seu progresso no servidor.
         </div>
       </div>
     </section>
@@ -266,17 +266,17 @@
           <div class="field-error-msg" id="errCourse">Por favor, digite seu curso ou selecione uma opção.</div>
           
           <p class="field-hint">💡 Digite o que quiser ou escolha uma sugestão:</p>
-          <div class="suggestions-pills">
-            <span class="quick-pill" data-target="inputCourse" data-val="Ensino Superior / Graduação">🎓 Ensino Superior</span>
-            <span class="quick-pill" data-target="inputCourse" data-val="Ensino Médio / ENEM">🏫 Ensino Médio</span>
-            <span class="quick-pill" data-target="inputCourse" data-val="Ensino Fundamental">📚 Ensino Fundamental</span>
-            <span class="quick-pill" data-target="inputCourse" data-val="Concurso Público">🏛️ Concurso Público</span>
-            <span class="quick-pill" data-target="inputCourse" data-val="Pós-graduação">📖 Pós-graduação</span>
-            <span class="quick-pill" data-target="inputCourse" data-val="Direito">Direito</span>
-            <span class="quick-pill" data-target="inputCourse" data-val="Ciência da Computação">Computação</span>
-            <span class="quick-pill" data-target="inputCourse" data-val="Engenharia">Engenharia</span>
-            <span class="quick-pill" data-target="inputCourse" data-val="Administração">Administração</span>
-            <span class="quick-pill pill-custom" data-target="inputCourse" data-val="">✏️ Outro (digitar)...</span>
+          <div class="suggestions-pills" role="group" aria-label="Sugestões de curso ou nível de ensino">
+            <button type="button" class="quick-pill" data-target="inputCourse" data-val="Ensino Superior / Graduação" aria-pressed="false">Ensino Superior</button>
+            <button type="button" class="quick-pill" data-target="inputCourse" data-val="Ensino Médio / ENEM" aria-pressed="false">Ensino Médio</button>
+            <button type="button" class="quick-pill" data-target="inputCourse" data-val="Ensino Fundamental" aria-pressed="false">Ensino Fundamental</button>
+            <button type="button" class="quick-pill" data-target="inputCourse" data-val="Concurso Público" aria-pressed="false">Concurso Público</button>
+            <button type="button" class="quick-pill" data-target="inputCourse" data-val="Pós-graduação" aria-pressed="false">Pós-graduação</button>
+            <button type="button" class="quick-pill" data-target="inputCourse" data-val="Direito" aria-pressed="false">Direito</button>
+            <button type="button" class="quick-pill" data-target="inputCourse" data-val="Ciência da Computação" aria-pressed="false">Computação</button>
+            <button type="button" class="quick-pill" data-target="inputCourse" data-val="Engenharia" aria-pressed="false">Engenharia</button>
+            <button type="button" class="quick-pill" data-target="inputCourse" data-val="Administração" aria-pressed="false">Administração</button>
+            <button type="button" class="quick-pill pill-custom" data-target="inputCourse" data-val="" aria-pressed="false">Outro (digitar)...</button>
           </div>
         </div>
 
@@ -297,17 +297,17 @@
           <div class="field-error-msg" id="errSubject">Por favor, digite a matéria ou selecione uma opção.</div>
 
           <p class="field-hint">💡 Digite sua matéria ou selecione uma sugestão:</p>
-          <div class="suggestions-pills">
-            <span class="quick-pill" data-target="inputSubject" data-val="História">História</span>
-            <span class="quick-pill" data-target="inputSubject" data-val="Física">Física</span>
-            <span class="quick-pill" data-target="inputSubject" data-val="Matemática">Matemática</span>
-            <span class="quick-pill" data-target="inputSubject" data-val="Português / Redação">Português</span>
-            <span class="quick-pill" data-target="inputSubject" data-val="Biologia">Biologia</span>
-            <span class="quick-pill" data-target="inputSubject" data-val="Química">Química</span>
-            <span class="quick-pill" data-target="inputSubject" data-val="Programação e T.I.">Programação</span>
-            <span class="quick-pill" data-target="inputSubject" data-val="Direito Constitucional">Direito</span>
-            <span class="quick-pill" data-target="inputSubject" data-val="Geografia">Geografia</span>
-            <span class="quick-pill pill-custom" data-target="inputSubject" data-val="">✏️ Outra (digitar)...</span>
+          <div class="suggestions-pills" role="group" aria-label="Sugestões de disciplina ou matéria">
+            <button type="button" class="quick-pill" data-target="inputSubject" data-val="História" aria-pressed="false">História</button>
+            <button type="button" class="quick-pill" data-target="inputSubject" data-val="Física" aria-pressed="false">Física</button>
+            <button type="button" class="quick-pill" data-target="inputSubject" data-val="Matemática" aria-pressed="false">Matemática</button>
+            <button type="button" class="quick-pill" data-target="inputSubject" data-val="Português / Redação" aria-pressed="false">Português</button>
+            <button type="button" class="quick-pill" data-target="inputSubject" data-val="Biologia" aria-pressed="false">Biologia</button>
+            <button type="button" class="quick-pill" data-target="inputSubject" data-val="Química" aria-pressed="false">Química</button>
+            <button type="button" class="quick-pill" data-target="inputSubject" data-val="Programação e T.I." aria-pressed="false">Programação</button>
+            <button type="button" class="quick-pill" data-target="inputSubject" data-val="Direito Constitucional" aria-pressed="false">Direito</button>
+            <button type="button" class="quick-pill" data-target="inputSubject" data-val="Geografia" aria-pressed="false">Geografia</button>
+            <button type="button" class="quick-pill pill-custom" data-target="inputSubject" data-val="" aria-pressed="false">Outra (digitar)...</button>
           </div>
         </div>
 
@@ -328,14 +328,25 @@
           <div class="field-error-msg" id="errTopic">Por favor, digite o assunto que deseja estudar.</div>
 
           <p class="field-hint">💡 Exemplos de temas populares (ou digite livremente o seu):</p>
-          <div class="suggestions-pills">
-            <span class="quick-pill" data-target="inputTopic" data-val="Descoberta do Brasil">🇧🇷 Descoberta do Brasil</span>
-            <span class="quick-pill" data-target="inputTopic" data-val="Leis de Newton">Leis de Newton</span>
-            <span class="quick-pill" data-target="inputTopic" data-val="Estruturas de Repetição (Loops)">Loops (For/While)</span>
-            <span class="quick-pill" data-target="inputTopic" data-val="Funções de 2º Grau">Função 2º Grau</span>
-            <span class="quick-pill" data-target="inputTopic" data-val="Fotossíntese e Células">Fotossíntese</span>
-            <span class="quick-pill" data-target="inputTopic" data-val="Direitos Fundamentais">Direitos Fundamentais</span>
-            <span class="quick-pill pill-custom" data-target="inputTopic" data-val="">✏️ Outro (digitar)...</span>
+          <div class="suggestions-pills" role="group" aria-label="Sugestões de assunto ou tópico">
+            <button type="button" class="quick-pill" data-target="inputTopic" data-val="Descoberta do Brasil" aria-pressed="false">Descoberta do Brasil</button>
+            <button type="button" class="quick-pill" data-target="inputTopic" data-val="Leis de Newton" aria-pressed="false">Leis de Newton</button>
+            <button type="button" class="quick-pill" data-target="inputTopic" data-val="Estruturas de Repetição (Loops)" aria-pressed="false">Loops (For/While)</button>
+            <button type="button" class="quick-pill" data-target="inputTopic" data-val="Funções de 2º Grau" aria-pressed="false">Função 2º Grau</button>
+            <button type="button" class="quick-pill" data-target="inputTopic" data-val="Fotossíntese e Células" aria-pressed="false">Fotossíntese</button>
+            <button type="button" class="quick-pill" data-target="inputTopic" data-val="Direitos Fundamentais" aria-pressed="false">Direitos Fundamentais</button>
+            <button type="button" class="quick-pill pill-custom" data-target="inputTopic" data-val="" aria-pressed="false">Outro (digitar)...</button>
+          </div>
+        </div>
+
+        <!-- Campo: Nível atual no assunto (F05) -->
+        <div class="form-group">
+          <span class="form-label" id="studyLevelLabel">Seu nível neste assunto</span>
+          <p class="field-hint" style="margin-top: 2px;">Escolha como o Tutor IA deve dosar a explicação e os exercícios:</p>
+          <div class="suggestions-pills" id="levelOptionsGroup" role="group" aria-labelledby="studyLevelLabel">
+            <button type="button" class="level-pill" data-level="iniciante" aria-pressed="false">Iniciante (do zero)</button>
+            <button type="button" class="level-pill" data-level="intermediario" aria-pressed="true">Já tenho base</button>
+            <button type="button" class="level-pill" data-level="revisao" aria-pressed="false">Revisão para prova</button>
           </div>
         </div>
 
@@ -364,6 +375,13 @@
         </div>
       </div>
 
+      <!-- Aviso de limite de pesquisas (F01) -->
+      <div class="guest-rate-notice" id="guestRateNotice" aria-live="polite">
+        🔓 <strong>Estudo livre:</strong> como visitante você pode fazer até <span id="rateNoticeLimit">30</span> pesquisas por hora (limite por endereço IP). <button type="button" class="inline-link-btn" id="rateNoticeLoginLink">Entrar ou criar conta</button> (opcional; o que você digitou será mantido).
+      </div>
+
+      <div class="guest-rate-notice is-limit-error" id="rateLimitAlertBox" role="alert" hidden></div>
+
       <!-- Botões de Ação -->
       <div style="display: flex; gap: 12px;">
         <button class="btn btn-secondary" id="btnBackToFormat" style="flex: 1;">
@@ -387,6 +405,7 @@
           <span class="meta-badge" id="badgeCourse">Curso</span>
           <span class="meta-badge" id="badgeSubject">Disciplina</span>
           <span class="meta-badge" id="badgeFormat">Formato: Texto</span>
+          <span class="meta-badge" id="badgeLevel">Nível: Já tenho base</span>
         </div>
         <h2 class="result-main-title" id="resultTitle">Título do Conteúdo</h2>
         <p class="result-main-subtitle" id="resultSubtitle">Subtítulo explicativo</p>
@@ -396,8 +415,8 @@
       <div class="demo-alert-banner" id="resultStatusBanner">
         <span id="resultStatusIcon" style="font-size: 1.3rem;">ℹ️</span>
         <div>
-          <strong id="resultStatusTitle">Modo de Demonstração (Etapa 2)</strong>
-          <span id="resultStatusNotice">Esta explicação foi gerada com conteúdo didático estruturado.</span>
+          <strong id="resultStatusTitle">Modo de Demonstração</strong>
+          <span id="resultStatusNotice">Esta explicação foi gerada com conteúdo didático estruturado pelo servidor.</span>
         </div>
       </div>
 
@@ -585,10 +604,13 @@
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; max-width: 380px; margin: 0 auto;">
-          <button class="btn btn-primary" id="btnRetryQuiz">
-            🔄 Refazer questionário
+          <button type="button" class="btn btn-primary" id="btnRetryQuiz">
+            🔄 Refazer este questionário
           </button>
-          <button class="btn btn-secondary" id="btnBackToResultFromQuiz">
+          <button type="button" class="btn btn-secondary" id="btnNewQuiz">
+            ✨ Gerar novo simulado
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnBackToResultFromQuiz">
             ← Voltar ao conteúdo do estudo
           </button>
         </div>
@@ -617,18 +639,18 @@
           <div class="stat-box-label">Simulados Feitos</div>
         </div>
         <div class="stat-box">
-          <div class="stat-box-value" id="statStreakDays">1🔥</div>
+          <div class="stat-box-value" id="statStreakDays">0</div>
           <div class="stat-box-label">Dias Consecutivos</div>
         </div>
       </div>
 
       <div class="stats-summary-grid" style="margin-top: 18px;">
         <div class="stat-box">
-          <div class="stat-box-value" id="insightFocusValue">Vazio</div>
+          <div class="stat-box-value" id="insightFocusValue">Nenhum tema</div>
           <div class="stat-box-label">Tema em Foco</div>
         </div>
         <div class="stat-box">
-          <div class="stat-box-value" id="insightAccuracyValue">0%</div>
+          <div class="stat-box-value" id="insightAccuracyValue">Sem dados</div>
           <div class="stat-box-label">Média de Acerto</div>
         </div>
         <div class="stat-box">
@@ -641,15 +663,27 @@
       <div class="study-goal-card">
         <div class="goal-header">
           <span class="goal-title">🎯 Meta Diária de Estudos</span>
-          <span class="goal-badge" id="goalProgressLabel">1 de 3 concluídos</span>
+          <span class="goal-badge" id="goalProgressLabel">0 de 3 concluídos</span>
         </div>
         <div class="quiz-progress-bar-bg">
-          <div class="quiz-progress-bar-fill" id="goalProgressBarFill" style="width: 33%;"></div>
+          <div class="quiz-progress-bar-fill" id="goalProgressBarFill" style="width: 0%;"></div>
         </div>
         <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
-          Cada pesquisa ou questionário realizado soma pontos na sua meta diária!
+          Cada explicação concluída ou simulado encerrado soma 1 na sua meta diária (sem duplicar).
         </p>
       </div>
+
+      <!-- Como calculamos (memória de cálculo - F02) -->
+      <details class="how-calculated-box" id="howCalculatedBox">
+        <summary>ℹ️ Como calculamos estes números</summary>
+        <ul>
+          <li><strong>Estudos realizados:</strong> quantidade de explicações concluídas.</li>
+          <li><strong>Simulados feitos:</strong> quantidade de questionários encerrados até o resultado final (sem duplicar se você reabrir a tela).</li>
+          <li><strong>Dias consecutivos:</strong> dias locais seguidos com pelo menos uma explicação concluída ou um simulado encerrado (mantida se houve atividade hoje ou ontem; <strong>0</strong> sem atividade ou se a sequência for interrompida).</li>
+          <li><strong>Média de acerto:</strong> total de acertos dividido pelo total de respostas válidas. Mostra <strong>Sem dados</strong> quando ainda não há respostas registradas.</li>
+          <li><strong>Meta diária:</strong> eventos concluídos na data local atual, com identificação única para evitar contagem dupla ao reabrir a tela ou repetir um envio.</li>
+        </ul>
+      </details>
 
       <!-- Lista de Estudos Recentes -->
       <h3 style="font-size: var(--font-size-base); margin: 20px 0 10px;">Pesquisas e Resumos Recentes</h3>
@@ -659,10 +693,10 @@
 
       <!-- Aviso Explicativo de Armazenamento Local -->
       <div class="local-storage-notice">
-        <strong>💾 Armazenamento Local neste Navegador:</strong><br>
-        Seus dados de estudo estão salvos com privacidade na memória deste dispositivo. Se você limpar os cookies ou o histórico do navegador, esses dados locais serão apagados. Na Etapa 3, implementaremos sincronização na nuvem com login opcional.
+        <strong>💾 Histórico salvo somente neste navegador:</strong><br>
+        No modo visitante, seus estudos, simulados e metas ficam salvos apenas na memória deste navegador (localStorage). Eles não aparecem em outros aparelhos e podem ser perdidos se você limpar os dados do navegador. Com uma conta opcional, você guarda o histórico e os contadores também no servidor (sem sincronização automática entre dispositivos).
         <div style="margin-top: 10px;">
-          <button class="btn btn-secondary" id="btnClearHistory" style="padding: 6px 12px; font-size: 11px; width: auto;">
+          <button type="button" class="btn btn-secondary" id="btnClearHistory" style="padding: 6px 12px; font-size: 11px; width: auto;">
             🗑️ Limpar histórico deste navegador
           </button>
         </div>
@@ -676,7 +710,7 @@
       <div class="section-heading">
         <h2 class="page-title" id="accountTitle">Conta do Estudante</h2>
         <p class="page-description">
-          Acesse suas preferências ou continue estudando no modo teste sem burocracia.
+          Estude livremente sem cadastro. A conta é opcional e guarda seu progresso no servidor (sem sincronização automática entre dispositivos).
         </p>
       </div>
 
@@ -685,7 +719,7 @@
         <div class="account-avatar" id="userAvatarIcon">🎓</div>
         <div class="account-status-info">
           <h3 id="userDisplayName">Estudante Visitante</h3>
-          <p id="userModeNotice">Você está usando como visitante</p>
+          <p id="userModeNotice">Você está usando como visitante (conta opcional)</p>
         </div>
       </div>
 
@@ -705,7 +739,7 @@
           <div class="profile-avatar" id="guestAccountAvatar">🎓</div>
           <div class="profile-info">
             <div class="profile-name" id="guestAccountTitle">Você está usando como visitante</div>
-            <div class="profile-email" id="guestAccountHint">Crie uma conta gratuita para pesquisar e salvar seu progresso.</div>
+            <div class="profile-email" id="guestAccountHint">O estudo é livre sem cadastro. Se quiser, entre ou crie uma conta para guardar seu progresso no servidor.</div>
           </div>
         </div>
         <div class="guest-account-actions">
@@ -754,10 +788,12 @@
           </div>
 
           <div style="margin-bottom: 16px; text-align: right;" id="boxForgotPassword">
-            <button type="button" class="btn btn-ghost btn-small" id="btnForgotPassword" aria-label="Recuperar senha">
+            <button type="button" class="btn btn-ghost btn-small" id="btnForgotPassword" aria-expanded="false" aria-controls="passwordRecoveryBox">
               Esqueci minha senha
             </button>
           </div>
+
+          <div class="password-recovery-box" id="passwordRecoveryBox" role="status" hidden></div>
 
           <button type="submit" class="btn btn-primary" id="btnSubmitAuth" aria-busy="false">
             Entrar na minha conta
@@ -766,12 +802,25 @@
 
       </div>
 
-      <!-- Informação Didática sobre a Etapa 3 -->
+      <!-- Informação honesta sobre o que a conta faz hoje (F06) -->
       <div class="local-storage-notice" style="margin-top: 20px;">
-        <strong>☁️ Sincronização em Nuvem (Etapa 3):</strong><br>
-        O acesso básico continuará 100% gratuito e livre de cadastro. Na Etapa 3, adicionaremos a sincronização com Supabase para que usuários cadastrados acessem o mesmo histórico no celular e computador.
+        <strong>🔐 Como sua conta e seus dados funcionam hoje:</strong><br>
+        O estudo é livre sem cadastro. Quando você cria uma conta, a senha é salva em hash seguro (scrypt) e sua sessão dura até 7 dias no servidor. Seu histórico fica salvo neste navegador e, quando conectado, também no servidor — <strong>não há sincronização automática entre dispositivos</strong>.
+        <div style="margin-top: 10px;">
+          <a href="/privacidade.html">Política de Privacidade</a>
+          <span aria-hidden="true"> · </span>
+          <a href="/termos.html">Termos de Uso</a>
+        </div>
       </div>
     </section>
+
+    <footer class="app-footer" aria-label="Informações legais e armazenamento">
+      <span>Estudo livre · Histórico do visitante salvo somente neste navegador</span>
+      <span aria-hidden="true">·</span>
+      <a href="/privacidade.html">Privacidade</a>
+      <span aria-hidden="true">·</span>
+      <a href="/termos.html">Termos de Uso</a>
+    </footer>
 
   </main>
 

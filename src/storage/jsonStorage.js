@@ -251,6 +251,7 @@ export function createJsonStorage({ dataDir, logger = console }) {
         topic: String(item.topic).trim(),
         explanationsSeen: Number(base?.explanationsSeen || 0) + Number(item.explanationsSeen || 0),
         quizzesAnswered: Number(base?.quizzesAnswered || 0) + Number(item.quizzesAnswered || 0),
+        questionsAnswered: Number(base?.questionsAnswered || 0) + Number(item.questionsAnswered || 0),
         correctAnswers: Number(base?.correctAnswers || 0) + Number(item.correctAnswers || 0),
         lastUpdated: new Date().toISOString()
       };

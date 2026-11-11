@@ -3,19 +3,23 @@
 //   versão mais nova do app (novos deploys chegam sozinhos); sem internet, usa a cópia guardada.
 // - /api/ nunca é interceptado nem guardado em cache.
 // - Ao publicar uma mudança nos arquivos estáticos, aumente CACHE_VERSION para limpar caches antigos.
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 const CACHE_PREFIX = 'tutor-ia-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
+  '/privacidade.html',
+  '/termos.html',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/css/variables.css',
   '/css/style.css',
   '/css/responsive.css',
+  '/css/legal.css',
   '/js/app.js',
+  '/js/legal.js',
   '/js/data/demoData.js',
   '/js/services/auth.js',
   '/js/services/storage.js',

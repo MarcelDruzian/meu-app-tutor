@@ -46,19 +46,24 @@ function loadServiceWorker({ network = () => new Response('rede', { status: 200 
   return { stores, fetched, dispatch, listeners };
 }
 
-test('a versão do cache é "v2" ou superior e nomes antigos são apagados ao ativar', async () => {
+test('a versão do cache é "v3" ou superior e nomes antigos são apagados ao ativar', async () => {
   assert.match(swSource, /const CACHE_VERSION = 'v(\d+)'/);
-  assert.ok(Number(swSource.match(/const CACHE_VERSION = 'v(\d+)'/)[1]) >= 2);
-  const sw = loadServiceWorker({ existingCaches: { 'tutor-ia-v1': { 'https://app.test/': new Response('velho') }, 'outro-app-cache': {} } });
+  const version = Number(swSource.match(/const CACHE_VERSION = 'v(\d+)'/)[1]);
+  assert.ok(version >= 3);
+  const sw = loadServiceWorker({ existingCaches: { 'tutor-ia-v1': { 'https://app.test/': new Response('velho') }, 'tutor-ia-v2': {}, 'outro-app-cache': {} } });
   await sw.dispatch('activate');
   assert.deepEqual([...sw.stores.keys()].sort(), ['outro-app-cache'], 'apaga só os caches antigos do Tutor IA');
 });
 
 test('install guarda os arquivos e tolera falha em um deles', async () => {
+  const versionMatch = swSource.match(/const CACHE_VERSION = '(v\d+)'/);
+  const cacheName = `tutor-ia-${versionMatch[1]}`;
   const sw = loadServiceWorker({ network: request => new Response('x', { status: request.url.endsWith('/js/app.js') ? 404 : 200 }) });
   await sw.dispatch('install');
-  const store = sw.stores.get('tutor-ia-v2');
+  const store = sw.stores.get(cacheName);
   assert.ok(store.has('https://app.test/index.html'));
+  assert.ok(store.has('https://app.test/privacidade.html'));
+  assert.ok(store.has('https://app.test/termos.html'));
   assert.ok(store.has('https://app.test/js/services/auth.js'), 'auth.js precisa estar disponível offline');
   assert.ok(!store.has('https://app.test/js/app.js'));
 });

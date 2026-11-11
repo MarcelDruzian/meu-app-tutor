@@ -93,6 +93,7 @@ const CORS_ORIGIN = String(process.env.CORS_ORIGIN || '').trim();
 
 const FIELD_LIMITS = { course: 200, subject: 200, topic: 200, question: 1000, explanationContext: 12000 };
 const VALID_FORMATS = new Set(['text', 'video', 'audio']);
+const VALID_LEVELS = new Set(['iniciante', 'intermediario', 'revisao']);
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=UTF-8',
@@ -124,10 +125,17 @@ const authRateLimiter = createRateLimiter({
   limit: getPositiveIntegerEnv('AUTH_RATE_LIMIT_MAX_REQUESTS', 10),
   windowMs: getPositiveIntegerEnv('AUTH_RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000)
 });
+const TUTOR_RATE_LIMIT_MAX = getPositiveIntegerEnv('TUTOR_RATE_LIMIT_MAX_REQUESTS', 30);
+const TUTOR_RATE_LIMIT_WINDOW_MS = getPositiveIntegerEnv('TUTOR_RATE_LIMIT_WINDOW_MS', 60 * 60 * 1000);
 const tutorRateLimiter = createRateLimiter({
-  limit: getPositiveIntegerEnv('TUTOR_RATE_LIMIT_MAX_REQUESTS', 30),
-  windowMs: getPositiveIntegerEnv('TUTOR_RATE_LIMIT_WINDOW_MS', 60 * 60 * 1000)
+  limit: TUTOR_RATE_LIMIT_MAX,
+  windowMs: TUTOR_RATE_LIMIT_WINDOW_MS
 });
+
+// Canal de suporte exibido na recuperação de senha e nas páginas de Privacidade/Termos.
+// Sem SUPPORT_EMAIL válido, o front mostra um texto neutro.
+const SUPPORT_EMAIL_RAW = String(process.env.SUPPORT_EMAIL || '').trim();
+const SUPPORT_EMAIL = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(SUPPORT_EMAIL_RAW) ? SUPPORT_EMAIL_RAW : null;
 
 // ========================================================
 // SENHAS (scrypt) E SESSÕES
@@ -272,10 +280,10 @@ async function getAuthenticatedUser(req) {
   return storage.findUserById(session.userId);
 }
 
-async function saveUserProgress(userId, { course, subject, topic, explanationsSeen = 0, quizzesAnswered = 0, correctAnswers = 0 } = {}) {
+async function saveUserProgress(userId, { course, subject, topic, explanationsSeen = 0, quizzesAnswered = 0, questionsAnswered = 0, correctAnswers = 0 } = {}) {
   if (!userId) return null;
   try {
-    return await storage.upsertProgress(userId, { course, subject, topic, explanationsSeen, quizzesAnswered, correctAnswers });
+    return await storage.upsertProgress(userId, { course, subject, topic, explanationsSeen, quizzesAnswered, questionsAnswered, correctAnswers });
   } catch (error) {
     console.warn('⚠️  Não foi possível salvar progresso do usuário:', error.message);
     return null;
@@ -458,12 +466,12 @@ function cleanText(value, maxLength) {
 // ========================================================
 // GERADORES DIDÁTICOS DE CONTINGÊNCIA (USAM A BASE EDUCACIONAL COMPLETA)
 // ========================================================
-function getFallbackExplanation(course, subject, topic, question, format = 'text') {
-  return generateSmartDemoExplanation(course, subject, topic, question, format);
+function getFallbackExplanation(course, subject, topic, question, format = 'text', level = 'intermediario') {
+  return generateSmartDemoExplanation(course, subject, topic, question, format, level);
 }
 
-function getFallbackQuiz(course, subject, topic, explanationContext = null) {
-  return generateDemoQuiz(course, subject, topic, explanationContext);
+function getFallbackQuiz(course, subject, topic, explanationContext = null, level = 'intermediario') {
+  return generateDemoQuiz(course, subject, topic, explanationContext, level);
 }
 
 // ========================================================
@@ -534,6 +542,12 @@ async function handleRequest(req, res) {
           ? `Tutor IA operando com inteligência artificial ativa em tempo real (${ai.provider}).`
           : `Configuração do provedor ativada, mas a integração ainda não foi validada em produção (${ai.provider}).`)
         : 'Modo Demonstração ativo: adicione sua GEMINI_API_KEY no arquivo .env para ativar respostas em tempo real.',
+      tutorRateLimit: {
+        maxRequests: TUTOR_RATE_LIMIT_MAX,
+        windowMinutes: Math.max(1, Math.round(TUTOR_RATE_LIMIT_WINDOW_MS / 60000))
+      },
+      passwordRecovery: 'unavailable',
+      supportEmail: SUPPORT_EMAIL,
       version: '2.1.0'
     });
   }
@@ -751,6 +765,7 @@ async function handleRequest(req, res) {
         topic: payload.topic,
         explanationsSeen: Number(payload.explanationsSeen || 0),
         quizzesAnswered: Number(payload.quizzesAnswered || 0),
+        questionsAnswered: Number(payload.questionsAnswered || 0),
         correctAnswers: Number(payload.correctAnswers || 0)
       });
 
@@ -805,6 +820,7 @@ async function handleRequest(req, res) {
       const topic = cleanText(payload.topic, FIELD_LIMITS.topic);
       const question = cleanText(payload.question, FIELD_LIMITS.question);
       const format = VALID_FORMATS.has(payload.format) ? payload.format : 'text';
+      const level = VALID_LEVELS.has(payload.level) ? payload.level : 'intermediario';
 
       if (!course || !subject || !topic) {
         return sendJson(res, 400, {
@@ -817,10 +833,10 @@ async function handleRequest(req, res) {
       // Tenta gerar via IA real se a chave estiver configurada
       if (ai.hasKey) {
         try {
-          const systemPrompt = buildExplainSystemPrompt({ course, subject, topic, format });
-          const userPrompt = `Curso: ${course}\nDisciplina: ${subject}\nAssunto: ${topic}\nDúvida do estudante: ${question || 'Explicação geral dos fundamentos'}\nFormato escolhido: ${format}`;
+          const systemPrompt = buildExplainSystemPrompt({ course, subject, topic, format, level });
+          const userPrompt = `Curso: ${course}\nDisciplina: ${subject}\nAssunto: ${topic}\nNível do estudante: ${level}\nDúvida do estudante: ${question || 'Explicação geral dos fundamentos'}\nFormato escolhido: ${format}`;
 
-          console.log(`🤖 Chamando IA para: ${topic} (${subject})...`);
+          console.log(`🤖 Chamando IA para: ${topic} (${subject} · ${level})...`);
           const aiResult = await ai.complete(systemPrompt, userPrompt);
 
           if (aiResult && aiResult.data && aiResult.data.sections) {
@@ -835,6 +851,7 @@ async function handleRequest(req, res) {
                 topic,
                 question,
                 format,
+                level,
                 generatedAt: new Date().toISOString()
               },
               tutorExplanation: aiResult.data
@@ -860,18 +877,19 @@ async function handleRequest(req, res) {
       }
 
       // Fallback didático seguro caso não haja chave ou ocorra falha de rede
-      const fallback = getFallbackExplanation(course, subject, topic, question, format);
+      const fallback = getFallbackExplanation(course, subject, topic, question, format, level);
       const responseBody = {
         meta: {
           isDemo: true,
           notice: ai.hasKey
             ? 'Aviso: Houve uma instabilidade momentânea na conexão com a IA. Exibindo conteúdo didático estruturado de contingência.'
-            : 'Modo Demonstração (Etapa 2): Configure sua chave GEMINI_API_KEY no arquivo .env para ativar a IA em tempo real.',
+            : 'Modo de demonstração: conteúdo didático estruturado gerado pelo próprio servidor (nenhum provedor de IA configurado).',
           course,
           subject,
           topic,
           question,
           format,
+          level,
           generatedAt: new Date().toISOString()
         },
         tutorExplanation: fallback
@@ -901,20 +919,20 @@ async function handleRequest(req, res) {
       const subject = cleanText(payload.subject, FIELD_LIMITS.subject) || 'Geral';
       const topic = cleanText(payload.topic, FIELD_LIMITS.topic) || 'Tópico de Estudo';
       const explanationContext = cleanText(payload.explanationContext, FIELD_LIMITS.explanationContext);
+      const level = VALID_LEVELS.has(payload.level) ? payload.level : 'intermediario';
 
-      const authenticatedUser = await getAuthenticatedUser(req);
       const useAi = payload.useAi !== false;
 
       if (useAi && ai.hasKey) {
         try {
-          const systemPrompt = buildQuizSystemPrompt({ course, subject, topic });
+          const systemPrompt = buildQuizSystemPrompt({ course, subject, topic, level });
 
-          let userPrompt = `Gerar simulado de 3 questões sobre ${topic} (${subject}) para o curso de ${course}.`;
+          let userPrompt = `Gerar simulado de 3 questões sobre ${topic} (${subject}) para o curso de ${course} (nível: ${level}).`;
           if (explanationContext) {
             userPrompt += `\n\nTEXTO LIDO PELO ESTUDANTE NA TELA DE LEITURA:\n${explanationContext}\n\nIMPORTANTE: Crie as questões testando a compreensão do texto acima!`;
           }
 
-          console.log(`📝 Gerando questionário contextualizado com IA para: ${topic}...`);
+          console.log(`📝 Gerando questionário contextualizado com IA para: ${topic} (${level})...`);
           const aiResult = await ai.complete(systemPrompt, userPrompt);
 
           if (aiResult && aiResult.data && Array.isArray(aiResult.data.questions) && aiResult.data.questions.length > 0) {
@@ -926,20 +944,13 @@ async function handleRequest(req, res) {
                 topic,
                 subject,
                 course,
+                level,
                 totalQuestions: aiResult.data.questions.length
               },
               questions: aiResult.data.questions
             };
-            if (authenticatedUser) {
-              await saveUserProgress(authenticatedUser.id, { course, subject, topic, quizzesAnswered: 1 });
-              await saveUserHistory(authenticatedUser.id, {
-                type: 'quiz',
-                course,
-                subject,
-                topic,
-                summary: `Questionário gerado com ${aiResult.provider}`
-              });
-            }
+            // O progresso do questionário é registrado pelo front apenas quando o estudante o encerra
+            // (POST /api/progress e /api/history), para não contar simulados gerados e abandonados.
             console.log(`✅ Questionário gerado com IA via ${aiResult.provider} (${aiResult.model})!`);
             return sendJson(res, 200, responseBody);
           }
@@ -950,27 +961,18 @@ async function handleRequest(req, res) {
       }
 
       // Fallback direto e rápido: as questões já estão pré-definidas para abrir o quiz sem espera de IA.
-      const fallbackQuestions = getFallbackQuiz(course, subject, topic, explanationContext);
+      const fallbackQuestions = getFallbackQuiz(course, subject, topic, explanationContext, level);
       const responseBody = {
         meta: {
           isDemo: true,
           topic,
           subject,
           course,
+          level,
           totalQuestions: fallbackQuestions.length
         },
         questions: fallbackQuestions
       };
-      if (authenticatedUser) {
-        await saveUserProgress(authenticatedUser.id, { course, subject, topic, quizzesAnswered: 1 });
-        await saveUserHistory(authenticatedUser.id, {
-          type: 'quiz',
-          course,
-          subject,
-          topic,
-          summary: 'Questionário didático gerado localmente'
-        });
-      }
       return sendJson(res, 200, responseBody);
     } catch (err) {
       return sendRouteError(res, err, 'Erro ao gerar questionário');

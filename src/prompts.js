@@ -2,10 +2,30 @@
 // TUTOR IA - PROMPTS PEDAGÓGICOS (texto idêntico ao original)
 // ==========================================================
 
-export function buildExplainSystemPrompt({ course, subject, topic, format }) {
+const LEVEL_LABELS = {
+  iniciante: 'Iniciante (começando do zero)',
+  intermediario: 'Intermediário (já tem base)',
+  revisao: 'Revisão para prova / aprofundamento'
+};
+
+const EXPLAIN_LEVEL_GUIDANCE = {
+  iniciante: 'Use linguagem simples e acolhedora, defina cada termo técnico antes de usar e priorize analogias do cotidiano.',
+  intermediario: 'Equilibre teoria e aplicação prática, conectando conceitos fundamentais a problemas reais da disciplina.',
+  revisao: 'Vá direto aos pontos mais cobrados em provas, relações de causa/efeito, fórmulas ou critérios essenciais e armadilhas comuns.'
+};
+
+const QUIZ_LEVEL_GUIDANCE = {
+  iniciante: 'Foque na compreensão dos conceitos fundamentais, com enunciados diretos e linguagem acessível.',
+  intermediario: 'Combine interpretação conceitual com aplicação prática em situações da disciplina.',
+  revisao: 'Priorize análise crítica, comparação entre conceitos e armadilhas frequentes em provas e vestibulares.'
+};
+
+export function buildExplainSystemPrompt({ course, subject, topic, format, level = 'intermediario' }) {
+  const safeLevel = EXPLAIN_LEVEL_GUIDANCE[level] ? level : 'intermediario';
   return `Você é o Tutor IA, um assistente educacional didático, acolhedor e rigoroso.
 Seu objetivo principal é guiar a compreensão do estudante, priorizando o raciocínio claro em vez de apenas entregar respostas secas.
 Adapte a explicação ao nível do estudante de ${course} na disciplina de ${subject}.
+Nível escolhido pelo estudante: ${LEVEL_LABELS[safeLevel]}. ${EXPLAIN_LEVEL_GUIDANCE[safeLevel]}
 Formato de aprendizado preferido pelo aluno: ${format} (se for áudio, capriche no audioScript; se for vídeo, recomende tópicos visuais; se for texto, capriche nos tópicos).
 Você NUNCA deve inventar fontes que não consultou. Seja honesto e didático.
 
@@ -59,9 +79,11 @@ Responda OBRIGATORIAMENTE em JSON no seguinte formato exato:
 }`;
 }
 
-export function buildQuizSystemPrompt({ course, subject, topic }) {
+export function buildQuizSystemPrompt({ course, subject, topic, level = 'intermediario' }) {
+  const safeLevel = QUIZ_LEVEL_GUIDANCE[level] ? level : 'intermediario';
   return `Você é o examinador pedagógico do Tutor IA.
 Crie um simulado de fixação com 3 questões de múltipla escolha sobre o tema "${topic}" na disciplina de "${subject}" (curso: ${course}).
+Nível escolhido pelo estudante: ${LEVEL_LABELS[safeLevel]}. ${QUIZ_LEVEL_GUIDANCE[safeLevel]}
 Critérios pedagógicos obrigatórios:
 1. As questões DEVEM se basear ESTRITAMENTE no texto e conceitos que o estudante acabou de ler na tela de leitura.
 2. Cada questão DEVE ter exatamente 4 alternativas: A, B, C, D.
