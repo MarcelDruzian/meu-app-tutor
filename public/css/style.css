@@ -71,7 +71,8 @@ select {
    CABEÇALHO (HEADER)
    ========================================================== */
 .app-header {
-  height: var(--header-height);
+  min-height: var(--header-height);
+  padding: 6px 0;
   background: linear-gradient(180deg, var(--bg-card) 0%, rgba(255,255,255,0.02) 100%);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
@@ -91,6 +92,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
 }
 
 .brand-link {
@@ -100,6 +102,13 @@ select {
   text-decoration: none;
   color: var(--text-main);
   cursor: pointer;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.brand-info {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .mascot-avatar {
@@ -126,23 +135,30 @@ select {
 .brand-info h1 {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
-  line-height: 1.1;
+  line-height: 1.15;
   color: var(--color-primary);
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  white-space: nowrap;
 }
 
 .brand-info span {
+  display: block;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   font-weight: var(--font-weight-normal);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-status {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 .header-account-chip {

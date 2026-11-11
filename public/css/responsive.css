@@ -2,20 +2,26 @@
    TUTOR IA - RESPONSIVIDADE E ADAPTA??O MULTITELA
    ========================================================== */
 
-/* Telas muito pequenas (at? 380px) */
-@media (max-width: 380px) {
-  :root {
-    --font-size-base: 0.9375rem;
-    --font-size-2xl: 1.35rem;
-  }
-
+/* Cabeçalho compacto em telas menores (até 600px) */
+@media (max-width: 600px) {
   .header-container {
     gap: var(--space-2);
     padding: 0 var(--space-3);
   }
 
-  .brand-info {
-    min-width: 0;
+  .brand-link {
+    gap: var(--space-2);
+  }
+
+  .mascot-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .mascot-avatar svg {
+    width: 22px;
+    height: 22px;
   }
 
   .brand-info h1 {
@@ -23,13 +29,85 @@
   }
 
   .brand-info span {
-    display: block;
+    font-size: 0.66rem;
+  }
+
+  .header-status {
+    gap: 6px;
+  }
+
+  .theme-toggle {
+    padding: 0;
+    width: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    justify-content: center;
+  }
+
+  .theme-toggle-text {
+    display: none;
+  }
+
+  .header-account-chip {
+    padding: 4px 8px 4px 4px;
+    gap: 5px;
+    min-height: 36px;
+    font-size: 0.72rem;
+  }
+
+  .header-account-avatar {
+    width: 20px;
+    height: 20px;
     font-size: 0.66rem;
   }
 
   .demo-pill {
-    padding: 5px 9px;
+    padding: 4px 8px;
+    min-height: 30px;
+    font-size: 0.66rem;
+  }
+
+  .stats-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+}
+
+/* Telas muito pequenas (até 420px) */
+@media (max-width: 420px) {
+  .header-account-avatar {
+    display: none;
+  }
+
+  .header-account-chip {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Telas muito pequenas (até 380px) */
+@media (max-width: 380px) {
+  :root {
+    --font-size-base: 0.9375rem;
+    --font-size-2xl: 1.35rem;
+  }
+
+  .brand-info h1 {
+    font-size: 0.95rem;
+  }
+
+  .brand-info span {
     font-size: 0.62rem;
+  }
+
+  .demo-pill {
+    padding: 4px 7px;
+    font-size: 0.62rem;
+  }
+
+  .header-account-chip {
+    padding: 3px 8px;
+    font-size: 0.68rem;
   }
 
   .main-wrapper {
@@ -38,7 +116,17 @@
   }
 
   .stats-summary-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .stat-box {
+    padding: var(--space-3);
+  }
+
+  .stat-box-value {
+    font-size: 1.15rem;
+    overflow-wrap: anywhere;
   }
 
   .welcome-mascot-card {
@@ -53,9 +141,10 @@
     align-items: flex-start;
   }
 
-  .quick-pill {
-    width: 100%;
-    justify-content: flex-start;
+  .quick-pill,
+  .level-pill {
+    min-height: 38px;
+    padding: 6px 11px;
   }
 }
 
