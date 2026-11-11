@@ -548,12 +548,94 @@
         <span class="step-indicator">Simulado de Fixação</span>
         <h2 class="page-title" id="quizMainTitle">Exercícios Práticos</h2>
         <p class="page-description" id="quizSubtitle">
-          Teste seus conhecimentos com questões comentadas pelo Tutor IA.
+          Pratique com questões de múltipla escolha comentadas pelo Tutor IA.
         </p>
       </div>
 
+      <!-- Tela Inicial / Configuração do Simulado (sem chamar IA automaticamente) -->
+      <div class="form-card quiz-setup-card" id="quizSetupCard">
+        <div class="quiz-schema-preview" aria-label="Como funciona a tela de exercícios">
+          <p class="quiz-schema-title">Como funciona o simulado</p>
+          <div class="quiz-schema-steps">
+            <div class="quiz-schema-step">
+              <span class="quiz-schema-badge">1</span>
+              <span>Escolha um tema ou use seu último estudo</span>
+            </div>
+            <div class="quiz-schema-step">
+              <span class="quiz-schema-badge">2</span>
+              <span>Responda a 3 questões com barra de progresso</span>
+            </div>
+            <div class="quiz-schema-step">
+              <span class="quiz-schema-badge">3</span>
+              <span>Veja a explicação didática e salve seu resultado</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="quiz-ready-notice" id="quizReadyTopicNotice" hidden></div>
+
+        <div class="form-group">
+          <label class="form-label" for="quizSetupTopic">
+            Tema do simulado <span class="required-badge">*</span>
+          </label>
+          <div class="input-container">
+            <input
+              type="text"
+              id="quizSetupTopic"
+              class="input-field"
+              placeholder="Digite um tema (ex: Leis de Newton, Fotossíntese...)"
+              required
+            >
+          </div>
+          <div class="field-error-msg" id="errQuizSetupTopic">Informe ou escolha um tema antes de gerar o simulado.</div>
+
+          <p class="field-hint">Sugestões rápidas (clique para preencher sem gastar IA):</p>
+          <div class="suggestions-pills" role="group" aria-label="Sugestões de tema para exercícios">
+            <button type="button" class="quiz-topic-pill" data-topic="Leis de Newton" data-subject="Física" data-course="Ensino Médio / ENEM" aria-pressed="false">Leis de Newton</button>
+            <button type="button" class="quiz-topic-pill" data-topic="Fotossíntese e Células" data-subject="Biologia" data-course="Ensino Médio / ENEM" aria-pressed="false">Fotossíntese</button>
+            <button type="button" class="quiz-topic-pill" data-topic="Funções de 2º Grau" data-subject="Matemática" data-course="Ensino Médio / ENEM" aria-pressed="false">Função 2º Grau</button>
+            <button type="button" class="quiz-topic-pill" data-topic="Descoberta do Brasil" data-subject="História" data-course="Ensino Médio / ENEM" aria-pressed="false">Descoberta do Brasil</button>
+            <button type="button" class="quiz-topic-pill" data-topic="Estruturas de Repetição (Loops)" data-subject="Programação e T.I." data-course="Ensino Superior / Graduação" aria-pressed="false">Loops (For/While)</button>
+            <button type="button" class="quiz-topic-pill" data-topic="Direitos Fundamentais" data-subject="Direito Constitucional" data-course="Concurso Público" aria-pressed="false">Direitos Fundamentais</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="quizSetupSubject">
+            Disciplina ou Matéria <span style="font-weight: normal; color: var(--text-muted);">(Opcional)</span>
+          </label>
+          <div class="input-container">
+            <input
+              type="text"
+              id="quizSetupSubject"
+              class="input-field"
+              placeholder="Ex: Física, Biologia, História..."
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <span class="form-label" id="quizSetupLevelLabel">Nível das questões</span>
+          <div class="suggestions-pills" id="quizLevelOptionsGroup" role="group" aria-labelledby="quizSetupLevelLabel">
+            <button type="button" class="quiz-difficulty-pill" data-level="iniciante" aria-pressed="false">Iniciante (do zero)</button>
+            <button type="button" class="quiz-difficulty-pill" data-level="intermediario" aria-pressed="true">Já tenho base</button>
+            <button type="button" class="quiz-difficulty-pill" data-level="revisao" aria-pressed="false">Revisão para prova</button>
+          </div>
+        </div>
+
+        <div class="quiz-setup-actions">
+          <button type="button" class="btn btn-primary" id="btnStartQuizFromSetup">
+            <span>✨ Gerar simulado</span>
+            <span class="loading-spinner" id="quizSetupSpinner" style="display: none;"></span>
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnGoToStudyFromQuiz">
+            📖 Estudar um assunto antes
+          </button>
+        </div>
+      </div>
+
       <!-- Progresso do Quiz -->
-      <div class="quiz-header-card" id="quizProgressCard">
+      <div class="quiz-header-card" id="quizProgressCard" style="display: none;">
         <div style="display: flex; justify-content: space-between; font-size: var(--font-size-xs); font-weight: bold;">
           <span id="quizCurrentStepText">Questão 1 de 3</span>
           <span id="quizScorePreviewText">Acertos: 0</span>
@@ -564,7 +646,7 @@
       </div>
 
       <!-- Card da Questão Ativa -->
-      <div class="question-card" id="activeQuestionCard">
+      <div class="question-card" id="activeQuestionCard" style="display: none;">
         <span class="question-number-pill" id="questionPill">Questão 1</span>
         <p class="question-statement" id="questionStatementText">
           Enunciado da questão será carregado aqui...
@@ -609,6 +691,9 @@
           </button>
           <button type="button" class="btn btn-secondary" id="btnNewQuiz">
             ✨ Gerar novo simulado
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnChooseAnotherQuizTopic">
+            🎯 Escolher outro tema
           </button>
           <button type="button" class="btn btn-secondary" id="btnBackToResultFromQuiz">
             ← Voltar ao conteúdo do estudo

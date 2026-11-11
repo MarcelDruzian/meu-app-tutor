@@ -323,6 +323,25 @@ describe('T01, T05, F04 e F06: verificação estática da interface', () => {
     assert.match(html, /id="guestAccountAvatar"[^>]*>\s*<svg\b/);
     assert.match(css, /#guestAccountAvatar\s+svg\s*\{[^}]*flex-shrink:\s*0\s*;/);
   });
+
+  test('Aba Exercícios abre tela acessível sem chamar IA automaticamente', () => {
+    assert.match(html, /id="quizSetupCard"/);
+    assert.match(html, /id="btnStartQuizFromSetup"/);
+    assert.match(html, /id="quizSetupTopic"/);
+
+    const quizTopicPills = [...html.matchAll(/<button\b([^>]*)class="[^"]*quiz-topic-pill[^"]*"([^>]*)>([\s\S]*?)<\/button>/g)];
+    assert.ok(quizTopicPills.length >= 4);
+    for (const [, before, after, label] of quizTopicPills) {
+      const attrs = `${before} ${after}`;
+      assert.match(attrs, /type="button"/);
+      assert.match(attrs, /aria-pressed="false"/);
+      assert.doesNotMatch(label, /[\u{1F300}-\u{1FAFF}]/u);
+    }
+
+    const navBlock = appJs.match(/querySelectorAll\('\.nav-tab-btn'\)\.forEach\([\s\S]*?\n\s*\}\);/);
+    assert.ok(navBlock, 'bloco de navegação das abas encontrado');
+    assert.doesNotMatch(navBlock[0], /startQuizForCurrentTopic|requestQuiz/);
+  });
 });
 
 // ----------------------------------------------------------------------------

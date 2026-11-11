@@ -71,6 +71,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-2);
   }
+
+  .quiz-schema-steps {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Telas muito pequenas (até 420px) */
@@ -142,7 +146,9 @@
   }
 
   .quick-pill,
-  .level-pill {
+  .level-pill,
+  .quiz-topic-pill,
+  .quiz-difficulty-pill {
     min-height: 38px;
     padding: 6px 11px;
   }

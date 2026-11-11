@@ -24,6 +24,7 @@ const state = {
   topic: '',
   specificQuestion: '',
   currentExplanation: null,
+  currentExplanationTopic: '',
   currentQuiz: null,
   quizCurrentIndex: 0,
   quizScore: 0,
@@ -56,7 +57,9 @@ export function switchScreen(targetScreenId) {
   }
 
   // Ações contextuais ao abrir certas telas
-  if (targetScreenId === 'screenHistory') {
+  if (targetScreenId === 'screenQuiz') {
+    renderQuizScreenState();
+  } else if (targetScreenId === 'screenHistory') {
     renderHistoryScreen();
   } else if (targetScreenId === 'screenAccount') {
     renderAccountScreen();
@@ -154,7 +157,7 @@ function captureStudyFormSnapshot() {
 function syncLevelPills(level = state.level) {
   const safeLevel = LEVEL_LABELS[level] ? level : 'intermediario';
   state.level = safeLevel;
-  document.querySelectorAll('.level-pill').forEach(btn => {
+  document.querySelectorAll('.level-pill, .quiz-difficulty-pill').forEach(btn => {
     btn.setAttribute('aria-pressed', String(btn.dataset.level === safeLevel));
   });
 }
@@ -477,6 +480,7 @@ function initStudyInfoForm() {
       });
 
       state.currentExplanation = result.explanation;
+      state.currentExplanationTopic = topic;
       const studyEventId = `study_${result.meta?.generatedAt || Date.now()}`;
 
       // Salva a sessão no histórico local (somente este navegador) e na conta quando logado
@@ -725,18 +729,103 @@ function initAudioControls() {
 // ==========================================================
 // TELA 5: EXERCÍCIOS E QUESTIONÁRIOS INTERATIVOS
 // ==========================================================
-async function startQuizForCurrentTopic() {
-  if (!state.topic) {
-    state.course = 'Ensino Médio';
-    state.subject = 'Física';
-    state.topic = 'Leis de Newton';
+function syncQuizTopicPills(currentTopic) {
+  const normalized = (currentTopic || '').trim().toLowerCase();
+  document.querySelectorAll('.quiz-topic-pill').forEach(pill => {
+    const pillTopic = (pill.dataset.topic || '').trim().toLowerCase();
+    pill.setAttribute('aria-pressed', String(Boolean(normalized) && pillTopic === normalized));
+  });
+}
+
+function renderQuizScreenState() {
+  const setupCard = document.getElementById('quizSetupCard');
+  const progressCard = document.getElementById('quizProgressCard');
+  const questionCard = document.getElementById('activeQuestionCard');
+  const summaryCard = document.getElementById('quizResultSummaryCard');
+  const backToResultBtn = document.getElementById('btnBackToResultFromQuiz');
+
+  if (backToResultBtn) {
+    backToResultBtn.style.display = state.currentExplanation ? 'inline-flex' : 'none';
   }
 
+  const hasActiveQuiz = Array.isArray(state.currentQuiz) && state.currentQuiz.length > 0;
+
+  if (!hasActiveQuiz) {
+    if (setupCard) setupCard.style.display = 'block';
+    if (progressCard) progressCard.style.display = 'none';
+    if (questionCard) questionCard.style.display = 'none';
+    if (summaryCard) summaryCard.style.display = 'none';
+
+    const subtitleEl = document.getElementById('quizSubtitle');
+    if (subtitleEl) {
+      subtitleEl.textContent = 'Pratique com questões de múltipla escolha comentadas pelo Tutor IA.';
+    }
+
+    const topicInput = document.getElementById('quizSetupTopic');
+    const subjectInput = document.getElementById('quizSetupSubject');
+    const readyNotice = document.getElementById('quizReadyTopicNotice');
+    const errEl = document.getElementById('errQuizSetupTopic');
+
+    if (topicInput && !topicInput.value.trim() && state.topic) {
+      topicInput.value = state.topic;
+    }
+    if (subjectInput && !subjectInput.value.trim() && state.subject) {
+      subjectInput.value = state.subject;
+    }
+
+    if (readyNotice) {
+      if (state.topic && state.currentExplanation) {
+        readyNotice.textContent = `📚 Último assunto estudado pronto para praticar: ${state.topic}${state.subject ? ` (${state.subject})` : ''}. Clique em "Gerar simulado" quando quiser iniciar.`;
+        readyNotice.hidden = false;
+      } else {
+        readyNotice.hidden = true;
+        readyNotice.textContent = '';
+      }
+    }
+
+    topicInput?.classList.remove('input-error');
+    errEl?.classList.remove('visible');
+    syncQuizTopicPills(topicInput?.value || state.topic);
+    syncLevelPills(state.level);
+    return;
+  }
+
+  if (setupCard) setupCard.style.display = 'none';
+
+  if (state.quizFinished) {
+    if (progressCard) progressCard.style.display = 'none';
+    if (questionCard) questionCard.style.display = 'none';
+    if (summaryCard) summaryCard.style.display = 'block';
+  } else {
+    if (progressCard) progressCard.style.display = 'block';
+    if (questionCard) questionCard.style.display = 'block';
+    if (summaryCard) summaryCard.style.display = 'none';
+  }
+}
+
+async function startQuizForCurrentTopic() {
+  if (!state.topic || !state.topic.trim()) {
+    renderQuizScreenState();
+    switchScreen('screenQuiz');
+    showToast('Escolha ou digite um tema antes de gerar o simulado.', 'warning');
+    return;
+  }
+
+  const btnStartSetup = document.getElementById('btnStartQuizFromSetup');
+  const setupSpinner = document.getElementById('quizSetupSpinner');
+  const btnGoToQuiz = document.getElementById('btnGoToQuiz');
+  const btnNewQuiz = document.getElementById('btnNewQuiz');
+
+  if (btnStartSetup) btnStartSetup.disabled = true;
+  if (btnGoToQuiz) btnGoToQuiz.disabled = true;
+  if (btnNewQuiz) btnNewQuiz.disabled = true;
+  if (setupSpinner) setupSpinner.style.display = 'inline-block';
+
   showToast('Carregando questionário com o Tutor IA...', 'info', 2000);
-  
-  // Monta o contexto textual completo que o estudante acabou de ler
+
+  // Monta o contexto textual completo apenas se corresponder ao mesmo tópico estudado
   let explanationContext = '';
-  if (state.currentExplanation) {
+  if (state.currentExplanation && state.currentExplanationTopic === state.topic) {
     const exp = state.currentExplanation;
     explanationContext = `Título: ${exp.title}\nResumo: ${exp.summary}\n`;
     if (exp.sections) {
@@ -747,8 +836,8 @@ async function startQuizForCurrentTopic() {
   let quizData;
   try {
     quizData = await TutorService.requestQuiz({
-      course: state.course,
-      subject: state.subject,
+      course: state.course || 'Geral',
+      subject: state.subject || 'Geral',
       topic: state.topic,
       explanationContext,
       level: state.level,
@@ -761,6 +850,11 @@ async function startQuizForCurrentTopic() {
     }
     showToast('Erro ao carregar questionário: ' + err.message, 'error');
     return;
+  } finally {
+    if (btnStartSetup) btnStartSetup.disabled = false;
+    if (btnGoToQuiz) btnGoToQuiz.disabled = false;
+    if (btnNewQuiz) btnNewQuiz.disabled = false;
+    if (setupSpinner) setupSpinner.style.display = 'none';
   }
 
   if (quizData.meta && !quizData.meta.isDemo) {
@@ -778,14 +872,12 @@ async function startQuizForCurrentTopic() {
   const sourceLabel = quizData.meta && !quizData.meta.isDemo
     ? `IA (${quizData.meta.provider || 'Tempo Real'})`
     : 'Modo rápido';
+  const subjectLabel = state.subject || 'Geral';
   document.getElementById('quizSubtitle').textContent =
-    `Questões sobre ${state.topic} (${state.subject}) · ${levelLabel} · ${sourceLabel}`;
-
-  document.getElementById('quizProgressCard').style.display = 'block';
-  document.getElementById('activeQuestionCard').style.display = 'block';
-  document.getElementById('quizResultSummaryCard').style.display = 'none';
+    `Questões sobre ${state.topic} (${subjectLabel}) · ${levelLabel} · ${sourceLabel}`;
 
   renderCurrentQuizQuestion();
+  renderQuizScreenState();
   switchScreen('screenQuiz');
 }
 
@@ -883,6 +975,73 @@ function handleOptionSelected(selectedId, question) {
 }
 
 function initQuizNavigation() {
+  const topicInput = document.getElementById('quizSetupTopic');
+  const subjectInput = document.getElementById('quizSetupSubject');
+  const errTopic = document.getElementById('errQuizSetupTopic');
+  let selectedPresetCourse = '';
+
+  document.querySelectorAll('.quiz-topic-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const topic = pill.dataset.topic || '';
+      const subject = pill.dataset.subject || '';
+      selectedPresetCourse = pill.dataset.course || '';
+      if (topicInput) {
+        topicInput.value = topic;
+        topicInput.classList.remove('input-error');
+      }
+      if (subjectInput) {
+        subjectInput.value = subject;
+      }
+      errTopic?.classList.remove('visible');
+      syncQuizTopicPills(topic);
+    });
+  });
+
+  topicInput?.addEventListener('input', () => {
+    selectedPresetCourse = '';
+    topicInput.classList.remove('input-error');
+    errTopic?.classList.remove('visible');
+    syncQuizTopicPills(topicInput.value);
+  });
+
+  document.querySelectorAll('.quiz-difficulty-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      syncLevelPills(btn.dataset.level);
+    });
+  });
+
+  document.getElementById('btnStartQuizFromSetup')?.addEventListener('click', async () => {
+    const topicVal = topicInput?.value.trim() || '';
+    const subjectVal = subjectInput?.value.trim() || '';
+
+    if (!topicVal) {
+      topicInput?.classList.add('input-error');
+      errTopic?.classList.add('visible');
+      topicInput?.focus();
+      showToast('Escolha ou digite um tema para gerar o simulado.', 'error');
+      return;
+    }
+
+    if (topicVal !== state.currentExplanationTopic) {
+      state.currentExplanation = null;
+      state.currentExplanationTopic = '';
+    }
+
+    state.topic = topicVal;
+    state.subject = subjectVal || 'Geral';
+    if (selectedPresetCourse) {
+      state.course = selectedPresetCourse;
+    } else if (!state.course) {
+      state.course = 'Geral';
+    }
+
+    await startQuizForCurrentTopic();
+  });
+
+  document.getElementById('btnGoToStudyFromQuiz')?.addEventListener('click', () => {
+    switchScreen('screenFormat');
+  });
+
   document.getElementById('btnNextQuestion')?.addEventListener('click', () => {
     if (state.quizCurrentIndex < state.currentQuiz.length - 1) {
       state.quizCurrentIndex += 1;
@@ -898,14 +1057,25 @@ function initQuizNavigation() {
     state.quizAnswered = false;
     state.quizRunId = `quiz_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`;
     state.quizFinished = false;
-    document.getElementById('quizProgressCard').style.display = 'block';
-    document.getElementById('activeQuestionCard').style.display = 'block';
-    document.getElementById('quizResultSummaryCard').style.display = 'none';
     renderCurrentQuizQuestion();
+    renderQuizScreenState();
   });
 
   document.getElementById('btnNewQuiz')?.addEventListener('click', async () => {
     await startQuizForCurrentTopic();
+  });
+
+  document.getElementById('btnChooseAnotherQuizTopic')?.addEventListener('click', () => {
+    state.currentQuiz = null;
+    state.quizFinished = false;
+    state.topic = '';
+    state.subject = '';
+    const input = document.getElementById('quizSetupTopic');
+    if (input) input.value = '';
+    const subj = document.getElementById('quizSetupSubject');
+    if (subj) subj.value = '';
+    renderQuizScreenState();
+    input?.focus();
   });
 
   document.getElementById('btnBackToResultFromQuiz')?.addEventListener('click', () => {
@@ -919,6 +1089,11 @@ function finishQuiz() {
 
   const summaryCard = document.getElementById('quizResultSummaryCard');
   summaryCard.style.display = 'block';
+
+  const backToResultBtn = document.getElementById('btnBackToResultFromQuiz');
+  if (backToResultBtn) {
+    backToResultBtn.style.display = state.currentExplanation ? 'inline-flex' : 'none';
+  }
 
   const total = state.currentQuiz.length;
   const score = state.quizScore;
@@ -1628,12 +1803,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (screenId === 'screenAccount') {
         openAccountPreservingFlow();
         return;
-      }
-      if (screenId === 'screenQuiz') {
-        if (!state.currentQuiz) {
-          startQuizForCurrentTopic();
-          return;
-        }
       }
       switchScreen(screenId);
     });

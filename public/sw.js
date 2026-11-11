@@ -3,7 +3,7 @@
 //   versão mais nova do app (novos deploys chegam sozinhos); sem internet, usa a cópia guardada.
 // - /api/ nunca é interceptado nem guardado em cache.
 // - Ao publicar uma mudança nos arquivos estáticos, aumente CACHE_VERSION para limpar caches antigos.
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 const CACHE_PREFIX = 'tutor-ia-';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const ASSETS_TO_CACHE = [
