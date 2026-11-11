@@ -186,6 +186,8 @@ select {
 .header-account-avatar {
   width: 22px;
   height: 22px;
+  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   background: var(--color-primary);
   color: var(--text-inverse);
@@ -194,6 +196,7 @@ select {
   justify-content: center;
   font-size: 0.72rem;
   font-weight: 800;
+  line-height: 1;
 }
 
 .theme-toggle {
@@ -1399,7 +1402,14 @@ select {
   align-items: center;
   justify-content: center;
   font-size: 1.7rem;
+  line-height: 1;
   flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+}
+
+.account-status-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .account-status-info h3 {
@@ -1495,6 +1505,11 @@ select {
 .profile-avatar {
   width: 56px;
   height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
   border: 2px solid rgba(255,255,255,0.65);
@@ -1503,20 +1518,40 @@ select {
   align-items: center;
   justify-content: center;
   color: var(--text-inverse);
+  font-size: 1.35rem;
   font-weight: 800;
+  line-height: 1;
   letter-spacing: 0.04em;
+}
+
+#guestAccountAvatar {
+  letter-spacing: 0;
+}
+
+#guestAccountAvatar svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .profile-name {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
   color: var(--text-main);
+  overflow-wrap: anywhere;
 }
 
 .profile-email {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .profile-badge {
@@ -1747,6 +1782,19 @@ select {
     align-items: flex-start;
     gap: 0.8rem;
   }
+
+  .profile-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    font-size: 1.15rem;
+  }
+
+  #guestAccountAvatar svg {
+    width: 22px;
+    height: 22px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1804,6 +1852,7 @@ select {
 .nav-tab-btn svg {
   width: 22px;
   height: 22px;
+  flex-shrink: 0;
 }
 
 .nav-tab-btn.active {

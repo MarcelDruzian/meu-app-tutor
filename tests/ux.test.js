@@ -308,6 +308,21 @@ describe('T01, T05, F04 e F06: verificação estática da interface', () => {
     assert.match(tutorJs, /useAi = true/);
     assert.match(appJs, /useAi:\s*true/);
   });
+
+  test('Conta mobile: avatares e ícone de navegação não distorcem em flex containers estreitos', () => {
+    for (const selector of ['\\.profile-avatar', '\\.header-account-avatar', '\\.account-avatar', '\\.nav-tab-btn svg']) {
+      const rule = css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`));
+      assert.ok(rule, `regra CSS encontrada para ${selector}`);
+      assert.match(rule[1], /flex-shrink:\s*0\s*;/, `${selector} deve impedir encolhimento horizontal`);
+    }
+    const profileAvatar = css.match(/\.profile-avatar\s*\{([^}]*)\}/);
+    assert.match(profileAvatar[1], /aspect-ratio:\s*1\s*\/\s*1\s*;/);
+    const profileInfo = css.match(/\.profile-info\s*\{([^}]*)\}/);
+    assert.ok(profileInfo);
+    assert.match(profileInfo[1], /min-width:\s*0\s*;/);
+    assert.match(html, /id="guestAccountAvatar"[^>]*>\s*<svg\b/);
+    assert.match(css, /#guestAccountAvatar\s+svg\s*\{[^}]*flex-shrink:\s*0\s*;/);
+  });
 });
 
 // ----------------------------------------------------------------------------
